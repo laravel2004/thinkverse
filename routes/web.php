@@ -8,7 +8,8 @@ Route::get('/', function () {
         ->latest('published_at')
         ->take(3)
         ->get();
-    return view('pages.home', compact('latestCourses'));
+    $pageContent = app(\App\Services\PageContentService::class)->getPage('home');
+    return view('pages.home', compact('latestCourses', 'pageContent'));
 })->name('home');
 
 Route::get('/courses', [\App\Http\Controllers\PublicCourseController::class, 'index'])->name('courses');
@@ -16,11 +17,13 @@ Route::get('/courses/{course:slug}', [\App\Http\Controllers\PublicCourseControll
 Route::get('/courses/{course:slug}/lessons/{lesson:slug}', [\App\Http\Controllers\PublicCourseController::class, 'lesson'])->name('courses.lesson');
 
 Route::get('/about', function () {
-    return view('pages.about');
+    $pageContent = app(\App\Services\PageContentService::class)->getPage('about');
+    return view('pages.about', compact('pageContent'));
 })->name('about');
 
 Route::get('/contact', function () {
-    return view('pages.contact');
+    $pageContent = app(\App\Services\PageContentService::class)->getPage('contact');
+    return view('pages.contact', compact('pageContent'));
 })->name('contact');
 
 Route::get('/dashboard', function () {
@@ -43,6 +46,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('lessons.blocks', \App\Http\Controllers\Admin\ContentBlockController::class)->shallow();
     Route::resource('courses.assignments', \App\Http\Controllers\Admin\AssignmentController::class)->shallow();
     Route::resource('assignments.submissions', \App\Http\Controllers\Admin\SubmissionController::class)->shallow();
+
+    Route::get('/pages', [\App\Http\Controllers\Admin\PageContentController::class, 'index'])->name('pages.index');
+    Route::get('/pages/{pageKey}/edit', [\App\Http\Controllers\Admin\PageContentController::class, 'edit'])->name('pages.edit');
+    Route::put('/pages/{pageKey}', [\App\Http\Controllers\Admin\PageContentController::class, 'update'])->name('pages.update');
 });
 
 Route::middleware('auth')->group(function () {

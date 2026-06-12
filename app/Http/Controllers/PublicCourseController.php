@@ -10,7 +10,24 @@ class PublicCourseController extends Controller
     public function index()
     {
         $courses = Course::where('status', 'published')->orderBy('sort_order')->orderBy('created_at', 'desc')->paginate(12);
-        return view('pages.courses', compact('courses'));
+        $pageContent = app(\App\Services\PageContentService::class)->getPage('courses');
+
+        // Fetch unique categories from database for published courses
+        $dbCategories = Course::where('status', 'published')
+            ->whereNotNull('category')
+            ->where('category', '<>', '')
+            ->pluck('category')
+            ->map(fn($cat) => trim($cat))
+            ->unique(fn($cat) => strtolower($cat))
+            ->values()
+            ->toArray();
+
+        // Inject the dynamic categories into filter chips, keeping "Semua" as the first chip
+        if (isset($pageContent['filters'])) {
+            $pageContent['filters']['chips'] = array_merge(['Semua'], $dbCategories);
+        }
+
+        return view('pages.courses', compact('courses', 'pageContent'));
     }
 
     public function show(Course $course)

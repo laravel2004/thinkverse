@@ -2,20 +2,11 @@ buatkan issue.md yang berisi perencanaan untuk nanti di implementasi
 oleh junior programmer atau ai model yang lebih murah
 
 isi dari planning nya adalah sebagai berikut
-1. pelajari mcp dari sticth terlebih dahulu.
-2. buatkan module kursus.
-3. module kursus itu nanti isinya ada sub sub bab yang bisa bertingkat.
-4. untuk textnya buat dengan WYSWYG editor.
-5. buat build component seperti card, accodion, card untuk buku, link di text, link dengan button, gambar upload, embed video youtube, upload file pdf.
-6. setiap course ada komentar di bagian bawah sendiri.
-7. jika admin mengaktifkan pengumpulan tugas. admin bisa upload tugas dan user nanti bisa mengsubmit tugas.
-8. upload tugas menggunakan upload pdf aja dan mengumpulkannya juga gitu.
-9. tugas bisa ada di akhir atau di setiap sub bab atau sectionnya
-
+1. pelajari pages about, contact, course, dan home dari C:\laragon\www\thinkverse\resources\views\pages terlebih dahulu.
+2. buatkan agar isi content nya bisa dinamis dan diganti di admin.
+3. Isi harus sama dengan seperti sekarang.
 
 
 buatkan tahapan tahapan yang harus direncanakan untuk implementasi
 fitur fitur ini, jelaskan secara detail apa yang harus dilakukan
-pada setiap tahapan, dan juga estimasi waktu yang dibutuhkan
-buatkan juga gambar diagram alur / flowchart untuk mempermudah pemahaman
-dengan target dapat diimplementasikan oleh programmer junior atau ai model yang lebih murah
+pada setiap tahapan. 

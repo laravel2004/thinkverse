@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Daftar Course - ThinkVerse Premium')
+@section('title', data_get($pageContent, 'hero.page_title'))
 
 @section('content')
     <!-- Hero Section -->
@@ -8,19 +8,24 @@
         <div class="max-w-container-max mx-auto relative z-10 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-12">
             <div class="md:w-3/5">
                 <h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-6">
-                    Eksplorasi Kursus Kami
+                    {{ data_get($pageContent, 'hero.title') }}
                 </h1>
                 <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-8">
-                    Tingkatkan keahlian Anda dengan kurikulum yang dirancang secara profesional oleh instruktur terbaik di bidangnya. Dari desain hingga data, temukan jalur pembelajaran yang tepat untuk masa depan Anda.
+                    {{ data_get($pageContent, 'hero.description') }}
                 </p>
                 <div class="flex flex-wrap gap-4 justify-center md:justify-start">
-                    <button class="px-8 py-4 rounded-full bg-primary-container text-white font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95">Mulai Belajar Sekarang</button>
-                    <button class="px-8 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-all">Pelajari Roadmap</button>
+                    <a href="{{ data_get($pageContent, 'hero.primary_button_url', '#') }}" class="px-8 py-4 rounded-full bg-primary-container text-white font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">{{ data_get($pageContent, 'hero.primary_button_label') }}</a>
+                    <a href="{{ data_get($pageContent, 'hero.secondary_button_url', '#') }}" class="px-8 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-all flex items-center justify-center">{{ data_get($pageContent, 'hero.secondary_button_label') }}</a>
                 </div>
             </div>
             <div class="md:w-2/5 relative">
                 <div class="w-full aspect-square rounded-[40px] overflow-hidden shadow-2xl relative border-8 border-white">
-                    <img class="w-full h-full object-cover" alt="A diverse group of university students collaborating on a digital project" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQXBawLpTtmlAFvyP3DIS1Y5-usT467L7VuphQ8HIBGtk6B-wKfRKJFKRywDCCvyzVwhy8FKNyMacf7vROUod4Bm83sKgjGKItetg8TE0Vj6hTon7_f38E_uV2_SuUBUatJFd0x1gVRfa49yWxz5Y9gL4AglXM8WreoJe06rvwLqqoYx3CifsZ18emNr8Xw2Khx0J0hVNleEwiiw19PJFHf2UnlJC9HamIFanEkbViZbUJa4zBINxQhL3UlQypmx6FeCe2_98e8ul3">
+                    @php
+                        $coursesHeroImg = data_get($pageContent, 'hero.image_url');
+                        $isCoursesHeroImgExternal = Str::startsWith($coursesHeroImg, ['http://', 'https://']);
+                        $resolvedCoursesHeroImg = $isCoursesHeroImgExternal ? $coursesHeroImg : Storage::url($coursesHeroImg);
+                    @endphp
+                    <img class="w-full h-full object-cover" alt="{{ data_get($pageContent, 'hero.image_alt') }}" src="{{ $resolvedCoursesHeroImg }}">
                     <div class="absolute inset-0 bg-gradient-to-t from-primary/30 to-transparent"></div>
                 </div>
                 <!-- Decorative Element -->
@@ -38,17 +43,17 @@
                     <!-- Desktop Search -->
                     <div class="relative w-full max-w-2xl mx-auto">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">search</span>
-                        <input class="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border-2 border-primary/10 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-body-md outline-none" placeholder="Cari materi pembelajaran atau instruktur..." type="text">
+                        <input class="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border-2 border-primary/10 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-body-md outline-none" placeholder="{{ data_get($pageContent, 'filters.search_placeholder') }}" type="text">
                     </div>
                     <!-- Filter Chips -->
                     <div class="flex flex-wrap justify-center gap-3">
-                        <button class="active-filter px-6 py-2.5 rounded-full font-label-md text-label-md transition-all border border-primary/20 hover:bg-primary/5 hover:text-primary">Semua</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">Matematika</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">IPA Terpadu</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">Bahasa Inggris</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">Coding</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">Desain Grafis</button>
-                        <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">Bisnis Digital</button>
+                        @foreach(data_get($pageContent, 'filters.chips', []) as $idx => $chip)
+                            @if($idx === 0)
+                                <button class="active-filter px-6 py-2.5 rounded-full font-label-md text-label-md transition-all border border-primary/20 hover:bg-primary/5 hover:text-primary">{{ $chip }}</button>
+                            @else
+                                <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">{{ $chip }}</button>
+                            @endif
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -66,7 +71,7 @@
                             </div>
                         @endif
                         <div class="absolute top-4 left-4 bg-primary/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold">
-                            {{ $course->level ?? 'Umum' }}
+                            {{ $course->level ?? data_get($pageContent, 'grid.default_level_label') }}
                         </div>
                     </div>
                     <div class="p-6 flex flex-col flex-grow">
@@ -83,15 +88,15 @@
                             {{ $course->excerpt ?? Str::limit($course->description, 100) }}
                         </p>
                         <div class="mt-auto flex items-center border-t border-primary/5 pt-4 justify-between">
-                            <span class="text-xs font-bold text-primary/60 uppercase tracking-wider">{{ $course->category ?? 'Umum' }}</span>
-                            <a href="{{ route('courses.show', $course) }}" class="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">Detail <span class="material-symbols-outlined text-[18px] ml-1">arrow_forward</span></a>
+                            <span class="text-xs font-bold text-primary/60 uppercase tracking-wider">{{ $course->category ?? data_get($pageContent, 'grid.default_category_label') }}</span>
+                            <a href="{{ route('courses.show', $course) }}" class="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">{{ data_get($pageContent, 'grid.detail_label') }} <span class="material-symbols-outlined text-[18px] ml-1">arrow_forward</span></a>
                         </div>
                     </div>
                 </article>
                 @empty
                 <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20 text-on-surface-variant">
                     <span class="material-symbols-outlined text-6xl mb-4 opacity-50">school</span>
-                    <p class="font-bold text-xl">Belum ada kursus yang tersedia</p>
+                    <p class="font-bold text-xl">{{ data_get($pageContent, 'grid.empty_state_title') }}</p>
                 </div>
                 @endforelse
             </div>
@@ -105,7 +110,7 @@
             <!-- Load More Button -->
             <div class="mt-16 text-center">
                 <button class="px-10 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 shadow-sm active:scale-95">
-                    Lihat Lebih Banyak Kursus
+                    {{ data_get($pageContent, 'grid.load_more_label') }}
                 </button>
             </div>
         </div>
@@ -116,13 +121,13 @@
         <div class="max-w-container-max mx-auto">
             <div class="gradient-primary rounded-[40px] p-8 md:p-16 text-white text-center relative overflow-hidden">
                 <div class="relative z-10">
-                    <h2 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-6">Mulai Perjalanan Belajar Anda</h2>
+                    <h2 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-6">{{ data_get($pageContent, 'newsletter.title') }}</h2>
                     <p class="font-body-lg text-body-lg opacity-90 max-w-2xl mx-auto mb-10">
-                        Dapatkan akses ke materi eksklusif dan komunitas belajar yang suportif. Daftar hari ini untuk mendapatkan rekomendasi kursus yang personal.
+                        {{ data_get($pageContent, 'newsletter.description') }}
                     </p>
                     <div class="flex flex-col md:flex-row justify-center items-center gap-4 max-w-lg mx-auto">
-                        <input class="w-full px-6 py-4 rounded-full text-on-surface bg-white border-none focus:ring-4 focus:ring-secondary/50" placeholder="Alamat email Anda" type="email">
-                        <button class="w-full md:w-auto px-8 py-4 rounded-full bg-white text-primary font-bold whitespace-nowrap hover:bg-opacity-90 transition-all">Daftar Sekarang</button>
+                        <input class="w-full px-6 py-4 rounded-full text-on-surface bg-white border-none focus:ring-4 focus:ring-secondary/50" placeholder="{{ data_get($pageContent, 'newsletter.email_placeholder') }}" type="email">
+                        <button class="w-full md:w-auto px-8 py-4 rounded-full bg-white text-primary font-bold whitespace-nowrap hover:bg-opacity-90 transition-all">{{ data_get($pageContent, 'newsletter.button_label') }}</button>
                     </div>
                 </div>
                 <!-- Decorative Circles -->

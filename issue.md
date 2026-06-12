@@ -1,656 +1,671 @@
-# Planning Implementasi Modul Kursus ThinkVerse
+# Planning Implementasi Konten Dinamis Halaman Public ThinkVerse
 
-Dokumen ini adalah panduan implementasi untuk junior programmer atau AI model yang lebih murah. Fokusnya adalah membuat modul kursus yang bisa dikelola admin, memiliki sub bab bertingkat, konten WYSIWYG, komponen konten reusable, komentar, dan pengumpulan tugas PDF.
+Dokumen ini dibuat sebagai panduan implementasi untuk junior programmer atau AI model yang lebih murah. Fokus pekerjaan adalah membuat konten halaman public bisa dikelola dari admin tanpa mengubah tampilan dan tanpa mengubah isi awal yang sedang tampil sekarang.
 
-Target implementasi harus tetap mengikuti struktur Laravel yang sudah ada di project ini. Saat dokumen ini dibuat, project sudah memiliki model dan migration awal untuk `Course`, `Lesson`, `Comment`, dan `Submission`, tetapi relasi model, controller, validasi, UI admin, UI user, dan beberapa kebutuhan assignment masih perlu dirapikan.
+Halaman yang wajib dipelajari dan dibuat dinamis:
 
----
+- `resources/views/pages/home.blade.php`
+- `resources/views/pages/about.blade.php`
+- `resources/views/pages/contact.blade.php`
+- `resources/views/pages/courses.blade.php`
 
-## Tujuan Fitur
-
-1. Admin bisa membuat dan mengelola kursus.
-2. Setiap kursus memiliki section/sub bab yang bisa bertingkat.
-3. Konten kursus dibuat memakai WYSIWYG editor.
-4. Admin bisa menyusun konten dari komponen seperti card, accordion, card buku, link text, link button, gambar, embed YouTube, dan PDF.
-5. Setiap kursus memiliki area komentar di bagian bawah halaman kursus.
-6. Admin bisa mengaktifkan tugas untuk kursus, section, atau sub bab tertentu.
-7. Tugas hanya memakai upload PDF, baik untuk file tugas dari admin maupun submission user.
-8. User bisa melihat kursus, membaca sub bab, berkomentar, dan submit tugas PDF.
+Catatan: prompt menyebut `course`, tetapi file yang tersedia di project adalah `courses.blade.php`. Gunakan halaman ini sebagai halaman course/katalog kursus.
 
 ---
 
-## Diagram Alur Utama
+## Tujuan Utama
 
-```mermaid
-flowchart TD
-    Start([Mulai]) --> Study[Pelajari Stitch MCP dan struktur project]
-    Study --> DataModel[Desain ulang data model kursus, lesson, content block, assignment, submission, comment]
-    DataModel --> AdminCourse[Admin membuat kursus]
-    AdminCourse --> AdminLessons[Admin membuat section/sub bab bertingkat]
-    AdminLessons --> Editor[Admin mengisi konten dengan WYSIWYG dan content blocks]
-    Editor --> TaskCheck{Tugas diaktifkan?}
-    TaskCheck -- Tidak --> Publish[Publish kursus]
-    TaskCheck -- Ya --> UploadTask[Admin upload file tugas PDF dan instruksi]
-    UploadTask --> Publish
-    Publish --> UserOpen[User membuka detail kursus]
-    UserOpen --> ReadContent[User membaca konten dan membuka sub bab]
-    ReadContent --> NeedSubmit{Ada tugas aktif?}
-    NeedSubmit -- Tidak --> Comment[User komentar di bawah kursus]
-    NeedSubmit -- Ya --> SubmitPDF[User upload submission PDF]
-    SubmitPDF --> Comment
-    Comment --> AdminReview[Admin moderasi komentar dan review submission]
-    AdminReview --> End([Selesai])
+1. Admin bisa mengubah teks, gambar, tombol, kontak, CTA, dan section marketing pada halaman Home, About, Contact, dan Courses.
+2. Isi awal setelah fitur selesai harus sama dengan isi hardcoded yang ada saat ini.
+3. Data kursus yang sudah dinamis dari model `Course` tetap dipakai dan tidak diganti dengan konten statis.
+4. Perubahan harus mengikuti pola Laravel yang sudah ada: route di `routes/web.php`, controller admin di `app/Http/Controllers/Admin`, model di `app/Models`, migration di `database/migrations`, dan view Blade di `resources/views`.
+5. Jika konten belum ada di database, halaman public tetap memiliki fallback agar tidak blank.
+
+---
+
+## Kondisi Saat Ini
+
+### Home
+
+File: `resources/views/pages/home.blade.php`
+
+Konten yang masih hardcoded:
+
+- Badge hero: `Platform Pembelajaran Terstruktur`
+- Judul hero: `Belajar lebih mudah dengan ThinkVerse`
+- Deskripsi hero.
+- Tombol utama: `Mulai Belajar Sekarang`
+- Tombol kedua: `Lihat Katalog Course`
+- Gambar hero dashboard.
+- Floating stat: `10,000+` dan `Siswa Terdaftar`
+- Section founder:
+  - Role: `Founder & Lead Mentor`
+  - Nama: `Mutty Hariyati`
+  - Quote founder.
+  - Bio founder.
+  - Foto founder.
+  - Link sosial masih `#`.
+- Section feature:
+  - Judul: `Kenapa Belajar di ThinkVerse?`
+  - Deskripsi section.
+  - 4 feature card: Kurikulum Terstruktur, Video Pembelajaran HD, E-Book Eksklusif, Komunitas & Diskusi.
+- Section katalog kursus:
+  - Judul: `Katalog Kursus Unggulan`
+  - Deskripsi section.
+  - Link `Lihat Semua Kursus`.
+  - Card kursus sudah dinamis dari `$latestCourses`.
+
+Yang sudah dinamis:
+
+- Data kursus unggulan memakai `$latestCourses` dari route `/`.
+- Thumbnail, kategori, judul, excerpt, dan detail kursus sudah memakai model `Course`.
+
+### About
+
+File: `resources/views/pages/about.blade.php`
+
+Konten yang masih hardcoded:
+
+- Title page: `Tentang Kami - ThinkVerse Premium`
+- Badge: `Misi Kami`
+- Judul hero: `Membangun Ekosistem Pendidikan yang Inklusif & Modern`
+- Deskripsi hero.
+- Section `Visi & Nilai Inti`.
+- 2 paragraf visi/nilai.
+- Gambar tim ThinkVerse.
+
+### Contact
+
+File: `resources/views/pages/contact.blade.php`
+
+Konten yang masih hardcoded:
+
+- Title page: `Kontak - ThinkVerse Premium`
+- Judul hero: `Hubungi Kami`
+- Deskripsi hero.
+- Contact cards:
+  - Lokasi Kantor.
+  - Email Dukungan.
+  - Telepon.
+- Detail alamat:
+  - `Gedung Inovasi Lt. 4`
+  - `Jl. Pendidikan No. 123, Jakarta Selatan`
+  - `12345, Indonesia`
+- Email: `halo@thinkverse.com`
+- Jam operasional: `Senin - Jumat, 09:00 - 17:00 WIB`
+- Telepon: `+62 812-3456-7890`
+- Form title: `Kirim Pesan`
+- Label dan placeholder form.
+- Tombol form: `Kirim Pesan Sekarang`
+
+Catatan penting:
+
+- Form contact saat ini belum memiliki endpoint submit karena button memakai `type="button"`.
+- Requirement prompt hanya menyebut konten bisa diganti di admin, bukan membuat fitur inbox/contact submission. Jangan tambahkan fitur submit pesan kecuali diminta di task terpisah.
+
+### Courses
+
+File: `resources/views/pages/courses.blade.php`
+
+Konten yang masih hardcoded:
+
+- Title page: `Daftar Course - ThinkVerse Premium`
+- Judul hero: `Eksplorasi Kursus Kami`
+- Deskripsi hero.
+- Tombol hero:
+  - `Mulai Belajar Sekarang`
+  - `Pelajari Roadmap`
+- Gambar hero.
+- Placeholder search: `Cari materi pembelajaran atau instruktur...`
+- Filter chips:
+  - Semua
+  - Matematika
+  - IPA Terpadu
+  - Bahasa Inggris
+  - Coding
+  - Desain Grafis
+  - Bisnis Digital
+- Empty state course.
+- Tombol load more: `Lihat Lebih Banyak Kursus`
+- Newsletter/CTA:
+  - Judul: `Mulai Perjalanan Belajar Anda`
+  - Deskripsi CTA.
+  - Placeholder email: `Alamat email Anda`
+  - Tombol: `Daftar Sekarang`
+
+Yang sudah dinamis:
+
+- Grid kursus memakai `$courses` dari `PublicCourseController@index`.
+- Pagination sudah memakai `$courses->links()`.
+- Card kursus mengambil thumbnail, level, title, excerpt/description, category, dan route detail dari model `Course`.
+
+---
+
+## Rekomendasi Arsitektur
+
+Gunakan pendekatan `PageContent` berbasis JSON per halaman dan section. Alasannya:
+
+- Konten halaman public terdiri dari banyak section marketing yang bentuknya berbeda-beda.
+- Lebih cepat dibuat daripada membuat banyak tabel spesifik.
+- Cukup fleksibel untuk teks, list fitur, tombol, link, icon, dan path gambar.
+- Bisa tetap aman jika validasi payload dilakukan per halaman/section.
+
+Struktur yang disarankan:
+
+- Tabel `page_contents`
+- Model `App\Models\PageContent`
+- Controller admin `App\Http\Controllers\Admin\PageContentController`
+- Service/helper `App\Services\PageContentService` atau repository sederhana untuk mengambil konten dengan fallback.
+- File default content, misalnya `config/public_pages.php`, untuk menjaga isi awal sama seperti sekarang.
+- Seeder opsional `PageContentSeeder` untuk memasukkan default content ke database.
+
+Jangan mengubah data kursus yang sudah ada di model `Course`. Halaman `courses.blade.php` hanya perlu membuat hero, filter chip, search placeholder, empty state, load more, dan newsletter menjadi dinamis.
+
+---
+
+## Desain Data
+
+### Migration `page_contents`
+
+Buat migration baru, contoh nama:
+
+`database/migrations/YYYY_MM_DD_HHMMSS_create_page_contents_table.php`
+
+Kolom yang disarankan:
+
+- `id`
+- `page_key` string, contoh: `home`, `about`, `contact`, `courses`
+- `section_key` string, contoh: `hero`, `founder`, `features`, `contact_info`, `newsletter`
+- `content` json
+- `is_active` boolean default true
+- `updated_by` nullable foreign id ke `users`
+- timestamps
+
+Tambahkan unique index:
+
+- unique `page_key + section_key`
+
+Contoh schema:
+
+```php
+Schema::create('page_contents', function (Blueprint $table) {
+    $table->id();
+    $table->string('page_key');
+    $table->string('section_key');
+    $table->json('content');
+    $table->boolean('is_active')->default(true);
+    $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+    $table->timestamps();
+
+    $table->unique(['page_key', 'section_key']);
+});
 ```
 
-## Diagram Relasi Data
+### Model `PageContent`
 
-```mermaid
-erDiagram
-    USERS ||--o{ COMMENTS : writes
-    USERS ||--o{ SUBMISSIONS : submits
-    COURSES ||--o{ LESSONS : contains
-    COURSES ||--o{ COMMENTS : has
-    COURSES ||--o{ ASSIGNMENTS : may_have
-    LESSONS ||--o{ LESSONS : has_children
-    LESSONS ||--o{ CONTENT_BLOCKS : has
-    LESSONS ||--o{ ASSIGNMENTS : may_have
-    ASSIGNMENTS ||--o{ SUBMISSIONS : receives
+Buat file:
 
-    COURSES {
-        id bigint
-        title string
-        slug string
-        excerpt text
-        description longText
-        thumbnail_path string
-        category string
-        level string
-        status string
-        sort_order int
-        published_at timestamp
-    }
+`app/Models/PageContent.php`
 
-    LESSONS {
-        id bigint
-        course_id bigint
-        parent_id bigint
-        title string
-        slug string
-        content longText
-        status string
-        sort_order int
-    }
+Isi minimal:
 
-    CONTENT_BLOCKS {
-        id bigint
-        lesson_id bigint
-        type string
-        payload json
-        sort_order int
-    }
+- `$fillable`: `page_key`, `section_key`, `content`, `is_active`, `updated_by`
+- cast `content` ke `array`
+- cast `is_active` ke `boolean`
+- relasi `updatedBy()` ke `User`
 
-    ASSIGNMENTS {
-        id bigint
-        course_id bigint
-        lesson_id bigint
-        title string
-        instruction longText
-        file_path string
-        is_active boolean
-        due_at timestamp
-    }
+### Default Content
 
-    SUBMISSIONS {
-        id bigint
-        assignment_id bigint
-        user_id bigint
-        file_path string
-        status string
-        score int
-        feedback text
-        submitted_at timestamp
-    }
+Buat file:
 
-    COMMENTS {
-        id bigint
-        course_id bigint
-        user_id bigint
-        parent_id bigint
-        body text
-        status string
-    }
+`config/public_pages.php`
+
+File ini menyimpan semua isi awal yang sekarang masih hardcoded. Fungsi utamanya:
+
+1. Sumber untuk seeder.
+2. Fallback saat data belum ada di database.
+3. Referensi agar implementer tidak perlu bolak-balik membaca Blade.
+
+Contoh struktur:
+
+```php
+return [
+    'home' => [
+        'hero' => [
+            'badge' => 'Platform Pembelajaran Terstruktur',
+            'title' => 'Belajar lebih mudah dengan ThinkVerse',
+            'highlight' => 'ThinkVerse',
+            'description' => 'Akses materi terstruktur...',
+            'primary_button_label' => 'Mulai Belajar Sekarang',
+            'primary_button_url' => '#',
+            'secondary_button_label' => 'Lihat Katalog Course',
+            'secondary_button_route' => 'courses',
+            'image_url' => 'https://...',
+            'image_alt' => 'Dashboard Pembelajaran ThinkVerse',
+            'stat_number' => '10,000+',
+            'stat_label' => 'Siswa Terdaftar',
+        ],
+    ],
+];
 ```
+
+Untuk gambar, versi pertama boleh tetap menyimpan URL lama. Jika ingin admin upload gambar, simpan file ke `storage/app/public/page-content` dan simpan path/URL di JSON.
 
 ---
 
-## Tahap 1: Pelajari Stitch MCP dan Struktur Project
+## Mapping Konten yang Harus Dibuat Dinamis
+
+### Home Sections
+
+`home.hero`
+
+- `badge`
+- `title_before_highlight`
+- `title_highlight`
+- `title_after_highlight`
+- `description`
+- `primary_button_label`
+- `primary_button_url`
+- `secondary_button_label`
+- `secondary_button_route` atau `secondary_button_url`
+- `image_url` atau `image_path`
+- `image_alt`
+- `stat_number`
+- `stat_label`
+
+`home.founder`
+
+- `role`
+- `name`
+- `quote`
+- `bio`
+- `photo_url` atau `photo_path`
+- `photo_alt`
+- `social_links`, array berisi label, icon, url
+
+Catatan: project sudah memiliki model dan tabel `SiteProfile`, tetapi belum dipakai. Implementer boleh memakai `SiteProfile` untuk data founder jika ingin lebih semantik. Namun untuk scope cepat dan konsisten dengan halaman lain, `PageContent` JSON sudah cukup.
+
+`home.features`
+
+- `title`
+- `description`
+- `items`, array:
+  - `icon`
+  - `title`
+  - `description`
+  - `color_variant`
+
+`home.course_preview`
+
+- `title`
+- `description`
+- `link_label`
+- `link_route` atau `link_url`
+- `empty_state_text`
+
+Data card kursus tetap dari `$latestCourses`.
+
+### About Sections
+
+`about.hero`
+
+- `page_title`
+- `badge`
+- `title_before_highlight`
+- `title_highlight`
+- `description`
+
+`about.vision`
+
+- `title`
+- `paragraphs`, array string
+- `image_url` atau `image_path`
+- `image_alt`
+
+### Contact Sections
+
+`contact.hero`
+
+- `page_title`
+- `title_before_highlight`
+- `title_highlight`
+- `description`
+
+`contact.info`
+
+- `cards`, array:
+  - `icon`
+  - `title`
+  - `lines`
+  - `link_label`
+  - `link_url`
+
+Isi awal harus memuat lokasi, email, dan telepon seperti halaman sekarang.
+
+`contact.form`
+
+- `title`
+- `fields`, array:
+  - `name`
+  - `label`
+  - `placeholder`
+  - `type`
+- `button_label`
+
+Catatan: simpan hanya konfigurasi tampilan form. Jangan implementasikan submit pesan kecuali ada requirement baru.
+
+### Courses Sections
+
+`courses.hero`
+
+- `page_title`
+- `title`
+- `description`
+- `primary_button_label`
+- `primary_button_url`
+- `secondary_button_label`
+- `secondary_button_url`
+- `image_url` atau `image_path`
+- `image_alt`
+
+`courses.filters`
+
+- `search_placeholder`
+- `chips`, array string
+
+Catatan: filter chips saat ini hanya tampilan. Jika ingin dibuat benar-benar memfilter data, jadikan task terpisah atau bagian tambahan setelah konten dinamis selesai.
+
+`courses.grid`
+
+- `empty_state_title`
+- `load_more_label`
+- `detail_label`
+- `default_level_label`
+- `default_category_label`
+
+Data kursus tetap dari `$courses`.
+
+`courses.newsletter`
+
+- `title`
+- `description`
+- `email_placeholder`
+- `button_label`
+
+Catatan: newsletter saat ini belum memiliki endpoint submit. Jangan tambahkan backend subscription kecuali diminta di task terpisah.
+
+---
+
+## Tahap Implementasi
+
+### Tahap 1: Inventory Konten dan Screenshot Baseline
+
+Estimasi: 0.5 hari.
+
+Yang harus dilakukan:
+
+1. Baca ulang 4 file Blade:
+   - `resources/views/pages/home.blade.php`
+   - `resources/views/pages/about.blade.php`
+   - `resources/views/pages/contact.blade.php`
+   - `resources/views/pages/courses.blade.php`
+2. Catat semua teks, gambar, alt text, tombol, icon, dan link yang masih hardcoded.
+3. Jalankan aplikasi lokal dan ambil screenshot baseline untuk 4 halaman.
+4. Pastikan halaman course yang dimaksud adalah route `/courses`, bukan file `course.blade.php`.
+5. Catat bagian yang sudah dinamis:
+   - `$latestCourses` di Home.
+   - `$courses` di Courses.
+
+Output tahap ini:
+
+- Checklist konten final.
+- Screenshot baseline sebelum perubahan.
+- Konfirmasi bahwa isi awal di config/seeder harus sama dengan hardcoded saat ini.
+
+### Tahap 2: Buat Migration, Model, dan Default Config
 
 Estimasi: 0.5 sampai 1 hari.
 
-Tujuan tahap ini adalah memahami cara kerja MCP Stitch sebelum coding UI, lalu mencocokkannya dengan struktur Laravel yang sudah ada.
-
 Yang harus dilakukan:
 
-1. Pelajari kemampuan MCP Stitch yang tersedia, terutama:
-   - `create_project` untuk membuat project desain/prototype jika diperlukan.
-   - `generate_screen_from_text` untuk membuat screen awal dari prompt.
-   - `edit_screens` untuk revisi screen.
-   - `generate_variants` untuk membuat alternatif UI.
-   - `list_design_systems`, `create_design_system`, dan `apply_design_system` untuk konsistensi desain.
-2. Tentukan apakah Stitch dipakai hanya untuk referensi desain atau menjadi sumber utama mockup UI.
-3. Buat daftar screen yang perlu ada:
-   - Admin course index.
-   - Admin create/edit course.
-   - Admin lesson tree builder.
-   - Admin content editor.
-   - Admin assignment manager.
-   - Admin submission review.
-   - Public course list.
-   - Public course detail.
-   - Public lesson reader.
-   - Public comment and submission area.
-4. Baca file project yang relevan:
-   - `routes/web.php`
-   - `app/Models/Course.php`
-   - `app/Models/Lesson.php`
-   - `app/Models/Comment.php`
-   - `app/Models/Submission.php`
-   - migration pada folder `database/migrations`
-   - layout Blade pada `resources/views/layouts`
-5. Catat gap antara database saat ini dan kebutuhan fitur. Saat ini `comments` masih terhubung ke `lesson_id`, sedangkan requirement meminta komentar di bawah course. Saat ini `submissions` masih langsung ke `lesson_id`, sedangkan requirement membutuhkan tugas bisa di akhir course atau di setiap sub bab.
+1. Buat migration `page_contents`.
+2. Buat model `PageContent`.
+3. Buat config `config/public_pages.php`.
+4. Masukkan semua konten hardcoded sekarang ke config tersebut.
+5. Jangan mengubah struktur tabel `courses` karena data kursus sudah berjalan.
+6. Jalankan migration.
+7. Pastikan cast JSON berjalan benar.
 
 Output tahap ini:
 
-- Catatan singkat cara memakai Stitch MCP untuk desain.
-- Daftar screen final.
-- Keputusan struktur data final sebelum migration dibuat.
+- Tabel `page_contents` tersedia.
+- Model `PageContent` siap dipakai.
+- Default content lengkap untuk Home, About, Contact, dan Courses.
 
----
+### Tahap 3: Buat Seeder Default Content
 
-## Tahap 2: Finalisasi Data Model dan Migration
+Estimasi: 0.5 hari.
+
+Yang harus dilakukan:
+
+1. Buat `database/seeders/PageContentSeeder.php`.
+2. Seeder membaca `config('public_pages')`.
+3. Untuk setiap `page_key` dan `section_key`, lakukan `updateOrCreate`.
+4. Jangan membuat duplicate jika seeder dijalankan berkali-kali.
+5. Daftarkan seeder di `DatabaseSeeder` jika diperlukan.
+6. Jalankan seeder di local.
+
+Output tahap ini:
+
+- Database berisi konten awal yang sama dengan tampilan sekarang.
+- Seeder idempotent.
+
+### Tahap 4: Buat Service untuk Mengambil Konten
+
+Estimasi: 0.5 hari.
+
+Yang harus dilakukan:
+
+1. Buat service misalnya `app/Services/PageContentService.php`.
+2. Buat method:
+   - `getPage(string $pageKey): array`
+   - `getSection(string $pageKey, string $sectionKey): array`
+3. Method harus mengambil data aktif dari database.
+4. Jika data tidak ada atau tidak aktif, pakai fallback dari `config/public_pages.php`.
+5. Gabungkan data database dengan default agar field baru tidak membuat halaman error.
+6. Pertimbangkan cache sederhana dengan `Cache::remember`, tetapi jangan wajib untuk versi pertama.
+
+Output tahap ini:
+
+- Public controller/route bisa mengambil konten tanpa query manual berulang.
+- Halaman tidak blank walaupun database kosong.
+
+### Tahap 5: Ubah Route Public Menjadi Mengirim Konten Dinamis
+
+Estimasi: 0.5 hari.
+
+Yang harus dilakukan:
+
+1. Route `/` tetap mengambil `$latestCourses`.
+2. Tambahkan `$pageContent = app(PageContentService::class)->getPage('home')`.
+3. Kirim `$pageContent` ke `pages.home`.
+4. Route `/about` kirim content `about`.
+5. Route `/contact` kirim content `contact`.
+6. `PublicCourseController@index` kirim content `courses` bersama `$courses`.
+7. Jangan menghapus query course yang sudah ada.
+
+Output tahap ini:
+
+- Semua halaman menerima variable konten dinamis.
+- Data kursus tetap tampil seperti sebelumnya.
+
+### Tahap 6: Refactor Blade Public
 
 Estimasi: 1 sampai 1.5 hari.
 
-Tujuan tahap ini adalah memastikan database mampu menangani course, sub bab bertingkat, content blocks, komentar course, assignment fleksibel, dan submission PDF.
-
 Yang harus dilakukan:
 
-1. Lengkapi model `Course`:
-   - Tambahkan `$fillable`.
-   - Tambahkan relasi `lessons()`, `comments()`, dan `assignments()`.
-   - Tambahkan scope `published()` jika diperlukan.
-2. Lengkapi model `Lesson`:
-   - Tambahkan `$fillable`.
-   - Tambahkan relasi `course()`, `parent()`, `children()`, `contentBlocks()`, dan `assignments()`.
-   - Gunakan `parent_id` untuk struktur bertingkat.
-   - Urutan tampil memakai `sort_order`.
-3. Ubah desain komentar:
-   - Komentar harus berada di level course, bukan hanya lesson.
-   - Buat migration untuk mengganti `lesson_id` menjadi `course_id` pada `comments`, atau buat ulang migration jika database masih development.
-   - Tetap boleh ada `parent_id` untuk reply komentar.
-4. Buat tabel `content_blocks`:
-   - Kolom: `id`, `lesson_id`, `type`, `payload`, `sort_order`, timestamps.
-   - `type` berisi: `wysiwyg`, `card`, `accordion`, `book_card`, `text_link`, `button_link`, `image`, `youtube_embed`, `pdf_file`.
-   - `payload` berupa JSON agar setiap block fleksibel menyimpan data berbeda.
-5. Buat tabel `assignments`:
-   - Kolom minimal: `id`, `course_id`, `lesson_id nullable`, `title`, `instruction`, `file_path`, `is_active`, `due_at nullable`, timestamps.
-   - Jika `lesson_id` kosong, artinya tugas berada di akhir course.
-   - Jika `lesson_id` terisi, artinya tugas berada pada sub bab/section tersebut.
-6. Refactor `submissions`:
-   - Submission sebaiknya terhubung ke `assignment_id`, bukan langsung ke `lesson_id`.
-   - Kolom minimal: `assignment_id`, `user_id`, `file_path`, `status`, `score`, `feedback`, `submitted_at`.
-   - Pastikan satu user hanya memiliki satu submission aktif per assignment, atau tentukan apakah boleh resubmit.
-7. Jalankan migration dan pastikan tidak error.
+1. Ganti teks hardcoded di Home dengan variable dari `$pageContent`.
+2. Ganti teks hardcoded di About dengan variable dari `$pageContent`.
+3. Ganti teks hardcoded di Contact dengan variable dari `$pageContent`.
+4. Ganti teks hardcoded di Courses dengan variable dari `$pageContent`.
+5. Gunakan fallback defensif seperti:
+   - `$hero['title'] ?? '...'`
+   - `data_get($pageContent, 'hero.title')`
+6. Untuk list seperti feature cards, contact cards, dan filter chips, gunakan loop.
+7. Pastikan route Blade seperti `route('courses')` tetap aman jika field route disimpan di config.
+8. Jangan render HTML bebas dari admin kecuali sudah disanitasi. Untuk versi pertama, gunakan plain text dan textarea.
+9. Pastikan gambar bisa memakai URL lama atau path storage.
 
 Output tahap ini:
 
-- Migration final.
-- Model dengan relasi lengkap.
-- Database bisa menyimpan struktur kursus bertingkat dan assignment fleksibel.
+- 4 halaman public tampil dari data dinamis.
+- Tampilan visual tetap sama dengan baseline.
+- Course grid dan latest course tetap dinamis dari model `Course`.
 
----
-
-## Tahap 3: Routing dan Controller Dasar
-
-Estimasi: 1 hari.
-
-Tujuan tahap ini adalah menyiapkan endpoint admin dan user secara jelas.
-
-Yang harus dilakukan:
-
-1. Buat route admin dengan middleware `auth` dan role admin:
-   - `GET /admin/courses`
-   - `GET /admin/courses/create`
-   - `POST /admin/courses`
-   - `GET /admin/courses/{course}/edit`
-   - `PUT /admin/courses/{course}`
-   - `DELETE /admin/courses/{course}`
-   - `GET /admin/courses/{course}/lessons`
-   - `POST /admin/courses/{course}/lessons`
-   - `PUT /admin/lessons/{lesson}`
-   - `DELETE /admin/lessons/{lesson}`
-   - `POST /admin/lessons/{lesson}/blocks`
-   - `PUT /admin/blocks/{block}`
-   - `DELETE /admin/blocks/{block}`
-   - `POST /admin/assignments`
-   - `PUT /admin/assignments/{assignment}`
-   - `GET /admin/assignments/{assignment}/submissions`
-2. Buat route public/user:
-   - `GET /courses`
-   - `GET /courses/{course:slug}`
-   - `GET /courses/{course:slug}/lessons/{lesson:slug}`
-   - `POST /courses/{course}/comments`
-   - `POST /assignments/{assignment}/submit`
-3. Buat controller:
-   - `Admin/CourseController`
-   - `Admin/LessonController`
-   - `Admin/ContentBlockController`
-   - `Admin/AssignmentController`
-   - `Admin/SubmissionReviewController`
-   - `CourseController`
-   - `LessonReaderController`
-   - `CommentController`
-   - `SubmissionController`
-4. Gunakan Form Request untuk validasi:
-   - `StoreCourseRequest`
-   - `UpdateCourseRequest`
-   - `StoreLessonRequest`
-   - `UpdateLessonRequest`
-   - `StoreContentBlockRequest`
-   - `StoreAssignmentRequest`
-   - `SubmitAssignmentRequest`
-5. Pastikan semua route yang menerima upload file memakai validasi ukuran dan MIME type.
-
-Output tahap ini:
-
-- Route jelas dan tidak tercampur antara admin dan public.
-- Controller minimal sudah bisa CRUD data utama.
-
----
-
-## Tahap 4: Admin Course Management
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah admin bisa membuat, mengedit, menghapus, dan publish kursus.
-
-Yang harus dilakukan:
-
-1. Buat halaman daftar course admin:
-   - Tampilkan judul, kategori, level, status, tanggal publish, dan action.
-   - Tambahkan filter status `draft` dan `published`.
-   - Tambahkan search berdasarkan judul.
-2. Buat form create/edit course:
-   - Field: title, slug, excerpt, description, thumbnail, category, level, status, sort_order, published_at.
-   - Slug bisa otomatis dari title tetapi tetap bisa diedit.
-   - Thumbnail memakai upload image.
-3. Simpan file thumbnail ke disk Laravel, misalnya `storage/app/public/courses`.
-4. Pastikan `php artisan storage:link` sudah dijalankan di environment development/production.
-5. Tambahkan validasi:
-   - title required.
-   - slug unique.
-   - thumbnail hanya image.
-   - status hanya `draft` atau `published`.
-6. Pastikan kursus `draft` tidak muncul di halaman public.
-
-Output tahap ini:
-
-- Admin bisa CRUD course.
-- Public hanya melihat course published.
-
----
-
-## Tahap 5: Lesson Tree Builder untuk Sub Bab Bertingkat
+### Tahap 7: Buat Admin Page Content Management
 
 Estimasi: 1.5 sampai 2 hari.
 
-Tujuan tahap ini adalah admin bisa membuat section/sub bab bertingkat di dalam course.
-
 Yang harus dilakukan:
 
-1. Buat halaman admin `Course Lessons`.
-2. Tampilkan lessons dalam bentuk tree berdasarkan `parent_id`.
-3. Setiap lesson punya:
-   - title
-   - slug
-   - excerpt
-   - parent_id
-   - status
-   - sort_order
-4. Admin bisa:
-   - tambah root section.
-   - tambah child section.
-   - edit section.
-   - hapus section.
-   - ubah urutan dengan input `sort_order` minimal dulu.
-5. Untuk versi awal, drag and drop tidak wajib. Jika ingin drag and drop, implementasi bisa dilakukan setelah CRUD stabil.
-6. Batasi tampilan tree agar mudah dibaca. Rekomendasi awal maksimal 4 level, walaupun database bisa menyimpan lebih.
-7. Pastikan slug lesson unik. Jika slug global terlalu membatasi, ubah ke unique kombinasi `course_id + slug`.
+1. Tambahkan route admin:
+   - `GET /admin/pages`
+   - `GET /admin/pages/{pageKey}/edit`
+   - `PUT /admin/pages/{pageKey}`
+2. Buat controller:
+   - `App\Http\Controllers\Admin\PageContentController`
+3. Tambahkan menu di sidebar admin, misalnya `Konten Halaman`.
+4. Halaman index menampilkan daftar:
+   - Home
+   - About
+   - Contact
+   - Courses
+5. Halaman edit menampilkan form sesuai halaman.
+6. Untuk versi pertama, form boleh dibuat eksplisit per halaman agar mudah dipahami junior:
+   - `resources/views/admin/pages/edit-home.blade.php`
+   - `resources/views/admin/pages/edit-about.blade.php`
+   - `resources/views/admin/pages/edit-contact.blade.php`
+   - `resources/views/admin/pages/edit-courses.blade.php`
+7. Alternatif: satu view edit generic dengan partial per section.
+8. Saat simpan, validasi input lalu update JSON section terkait.
+9. Simpan `updated_by` memakai `auth()->id()`.
+10. Tampilkan flash message sukses/gagal.
 
 Output tahap ini:
 
-- Course memiliki daftar sub bab bertingkat.
-- Admin bisa mengelola urutan dan parent-child lesson.
+- Admin bisa membuka menu konten halaman.
+- Admin bisa mengubah konten Home, About, Contact, dan Courses.
+- Data tersimpan ke `page_contents`.
 
----
-
-## Tahap 6: WYSIWYG Editor dan Content Blocks
-
-Estimasi: 2 sampai 3 hari.
-
-Tujuan tahap ini adalah admin bisa membuat isi lesson dengan editor rich text dan komponen konten.
-
-Rekomendasi teknis:
-
-- Untuk WYSIWYG gunakan library yang mudah: Tiptap, TinyMCE, CKEditor, atau Quill.
-- Untuk implementasi cepat di Blade/Laravel, TinyMCE atau CKEditor lebih sederhana.
-- Simpan HTML hasil WYSIWYG ke block `type = wysiwyg`.
-- Sanitasi HTML sebelum render ke public untuk mengurangi risiko XSS.
-
-Content blocks yang harus dibuat:
-
-1. `wysiwyg`
-   - Payload: `{ "html": "..." }`
-   - Render sebagai HTML konten utama.
-2. `card`
-   - Payload: `{ "title": "...", "body": "...", "variant": "info|warning|success" }`
-   - Render sebagai kartu informasi.
-3. `accordion`
-   - Payload: `{ "items": [{ "title": "...", "body": "..." }] }`
-   - Render sebagai daftar accordion.
-4. `book_card`
-   - Payload: `{ "title": "...", "author": "...", "cover_path": "...", "description": "...", "url": "..." }`
-   - Cover opsional tetapi disarankan.
-5. `text_link`
-   - Payload: `{ "label": "...", "url": "..." }`
-   - Bisa disisipkan di area konten.
-6. `button_link`
-   - Payload: `{ "label": "...", "url": "...", "style": "primary|secondary" }`
-   - Render sebagai tombol.
-7. `image`
-   - Payload: `{ "path": "...", "alt": "...", "caption": "..." }`
-   - Upload hanya image.
-8. `youtube_embed`
-   - Payload: `{ "url": "...", "video_id": "...", "title": "..." }`
-   - Simpan `video_id`, bukan iframe mentah.
-9. `pdf_file`
-   - Payload: `{ "path": "...", "title": "...", "description": "..." }`
-   - Upload hanya PDF.
-
-Yang harus dilakukan:
-
-1. Buat UI admin untuk menambah block ke lesson.
-2. Buat partial Blade untuk setiap block:
-   - `resources/views/components/course-blocks/wysiwyg.blade.php`
-   - `resources/views/components/course-blocks/card.blade.php`
-   - dan seterusnya.
-3. Saat render public, loop semua block berdasarkan `sort_order`.
-4. Validasi payload per type. Jangan menerima payload bebas tanpa pengecekan.
-5. Untuk YouTube, buat helper untuk mengambil video id dari URL:
-   - `https://www.youtube.com/watch?v=...`
-   - `https://youtu.be/...`
-6. Untuk upload image dan PDF, simpan file dengan path terstruktur:
-   - image: `course-content/images`
-   - PDF: `course-content/pdfs`
-
-Output tahap ini:
-
-- Admin bisa menyusun konten lesson dari WYSIWYG dan block.
-- Public bisa melihat konten dengan tampilan rapi.
-
----
-
-## Tahap 7: Assignment dan Upload PDF
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah admin bisa membuat tugas, upload file PDF tugas, dan user bisa submit PDF.
-
-Yang harus dilakukan:
-
-1. Buat form assignment admin:
-   - Pilih course.
-   - Pilih lesson opsional.
-   - Jika lesson kosong, tugas dianggap tugas akhir course.
-   - Field: title, instruction, PDF tugas, due_at, is_active.
-2. Validasi file admin:
-   - wajib PDF jika tugas membutuhkan file.
-   - MIME: `application/pdf`.
-   - Ukuran maksimal ditentukan, misalnya 10 MB.
-3. Tampilkan assignment:
-   - Di akhir halaman course jika `lesson_id` kosong.
-   - Di halaman lesson jika `lesson_id` terisi.
-4. Buat form submit user:
-   - User hanya upload PDF.
-   - User harus login.
-   - Simpan ke `storage/app/public/submissions`.
-5. Tentukan kebijakan resubmit:
-   - Rekomendasi awal: user boleh mengganti submission selama status masih `pending`.
-   - Jika status sudah `reviewed`, user tidak bisa submit ulang kecuali admin membuka ulang.
-6. Buat halaman admin review submission:
-   - Lihat daftar user, file PDF, waktu submit, status.
-   - Admin bisa memberi score dan feedback.
-   - Admin bisa ubah status menjadi `reviewed`.
-
-Output tahap ini:
-
-- Admin bisa memberi tugas di akhir course atau di sub bab tertentu.
-- User bisa mengumpulkan PDF.
-- Admin bisa review submission.
-
----
-
-## Tahap 8: Komentar Course
+### Tahap 8: Upload Gambar untuk Konten Halaman
 
 Estimasi: 0.5 sampai 1 hari.
 
-Tujuan tahap ini adalah setiap course punya area komentar di bagian bawah sendiri.
-
 Yang harus dilakukan:
 
-1. Tampilkan komentar di bagian bawah halaman detail course.
-2. Komentar hanya bisa dikirim oleh user login.
-3. Guest hanya melihat komentar dan CTA login.
-4. Simpan komentar dengan `course_id`, `user_id`, `body`, `status`.
-5. Jika memakai reply, gunakan `parent_id`.
-6. Tambahkan proteksi spam sederhana:
-   - body required.
-   - minimal 3 karakter.
-   - maksimal 1000 atau 2000 karakter.
-   - rate limit route komentar.
-7. Buat admin moderation minimal:
-   - tampilkan daftar komentar.
-   - admin bisa hide/unhide.
-   - status: `visible`, `hidden`, `pending`.
+1. Tambahkan input file untuk gambar:
+   - Home hero image.
+   - Home founder photo.
+   - About image.
+   - Courses hero image.
+2. Validasi file:
+   - `image`
+   - `mimes:jpeg,png,jpg,webp`
+   - max 2 MB atau sesuai standar project.
+3. Simpan ke disk public:
+   - `page-content/home`
+   - `page-content/about`
+   - `page-content/courses`
+4. Jika file baru diupload, update path di JSON.
+5. Jangan hapus gambar lama sebelum upload baru berhasil.
+6. Pastikan `php artisan storage:link` sudah dijalankan.
 
 Output tahap ini:
 
-- Course punya komentar di bagian bawah.
-- Admin bisa menyembunyikan komentar bermasalah.
+- Admin bisa mengganti gambar halaman.
+- Halaman public menampilkan gambar baru.
+- Jika tidak ada upload, URL/path lama tetap dipakai.
 
----
+### Tahap 9: Validasi dan Sanitasi
 
-## Tahap 9: Public Course Reader
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah user bisa membaca kursus dengan UX yang jelas.
+Estimasi: 0.5 hari.
 
 Yang harus dilakukan:
 
-1. Halaman `/courses`:
-   - Card daftar course.
-   - Filter kategori/level jika data sudah tersedia.
-   - Empty state jika belum ada course.
-2. Halaman detail course:
-   - Thumbnail, title, excerpt, description.
-   - Sidebar atau daftar isi lesson tree.
-   - Tampilkan tugas akhir course jika ada.
-   - Komentar di bagian bawah.
-3. Halaman lesson reader:
-   - Breadcrumb course.
-   - Sidebar tree sub bab.
-   - Render content blocks.
-   - Tampilkan assignment lesson jika ada.
-   - Tombol previous/next lesson berdasarkan urutan tree.
-4. Pastikan hanya course dan lesson `published` yang bisa diakses public.
-5. Jika course draft dibuka public, return 404.
+1. Buat validasi per halaman agar struktur JSON tidak rusak.
+2. Batasi panjang field:
+   - title maksimal 255 karakter.
+   - label tombol maksimal 100 karakter.
+   - paragraph/description bisa `nullable|string`.
+3. Validasi URL untuk link eksternal.
+4. Untuk social link, validasi label dan URL.
+5. Untuk Material Symbols icon, simpan sebagai string sederhana dan jangan render HTML mentah.
+6. Jangan izinkan admin memasukkan script atau iframe di field teks.
+7. Gunakan escaping Blade default `{{ }}` untuk teks.
 
 Output tahap ini:
 
-- User bisa membaca course dan semua sub bab.
-- Tugas dan komentar muncul di posisi yang benar.
+- Input admin tidak mudah merusak halaman.
+- Risiko XSS rendah karena tidak render HTML mentah.
 
----
-
-## Tahap 10: Security, Validasi, dan Sanitasi
+### Tahap 10: Testing Manual dan Automated Test
 
 Estimasi: 1 hari.
 
-Tujuan tahap ini adalah mengurangi risiko bug dan celah keamanan.
+Automated test minimal:
 
-Yang harus dilakukan:
-
-1. Semua route admin wajib middleware admin.
-2. Semua route submission dan komentar wajib login.
-3. Validasi upload:
-   - image hanya `jpg`, `jpeg`, `png`, `webp`.
-   - PDF hanya `pdf`.
-   - batasi ukuran file.
-4. Sanitasi HTML WYSIWYG:
-   - Jangan render iframe bebas dari input admin.
-   - YouTube harus memakai video id yang divalidasi.
-   - Link harus valid URL.
-5. Pastikan file private atau public sesuai kebutuhan:
-   - Materi course bisa public jika kursus public.
-   - Submission user sebaiknya hanya bisa diakses admin dan pemilik.
-6. Tambahkan policy bila diperlukan:
-   - `CoursePolicy`
-   - `AssignmentPolicy`
-   - `SubmissionPolicy`
-7. Pastikan tidak ada mass assignment error dengan `$fillable`.
-
-Output tahap ini:
-
-- Upload aman.
-- Route terlindungi.
-- HTML WYSIWYG tidak membuka XSS besar.
-
----
-
-## Tahap 11: Testing Manual dan Automated Test
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah memastikan fitur utama tidak mudah rusak.
-
-Minimal automated test:
-
-1. Admin bisa membuat course.
-2. User biasa tidak bisa akses admin course.
-3. Course draft tidak tampil di public.
-4. Course published tampil di public.
-5. Admin bisa membuat lesson child.
-6. Public bisa membaca lesson published.
-7. User login bisa komentar di course.
-8. Guest tidak bisa komentar.
-9. Admin bisa membuat assignment course-level.
-10. Admin bisa membuat assignment lesson-level.
-11. User bisa submit PDF.
-12. Upload non-PDF untuk submission ditolak.
+1. Guest bisa membuka Home.
+2. Guest bisa membuka About.
+3. Guest bisa membuka Contact.
+4. Guest bisa membuka Courses.
+5. Home tetap menampilkan latest published courses.
+6. Courses tetap menampilkan published courses.
+7. Admin bisa membuka halaman edit content.
+8. User non-admin tidak bisa membuka halaman edit content.
+9. Admin bisa update content Home hero.
+10. Setelah update, halaman Home menampilkan teks baru.
+11. Jika content database kosong, halaman memakai fallback config.
 
 Manual test:
 
-1. Buat course baru dari admin.
-2. Buat 2 root section dan 2 child section.
-3. Isi lesson dengan semua jenis block.
-4. Upload gambar, PDF materi, dan embed YouTube.
-5. Aktifkan tugas di lesson.
-6. Aktifkan tugas akhir course.
-7. Login sebagai user.
-8. Baca course dan submit PDF.
-9. Kirim komentar.
-10. Login sebagai admin dan review submission.
+1. Ambil screenshot sebelum perubahan.
+2. Jalankan migration dan seeder.
+3. Buka Home, About, Contact, Courses.
+4. Bandingkan dengan screenshot baseline.
+5. Login sebagai admin.
+6. Ubah teks hero Home.
+7. Upload gambar baru untuk About.
+8. Ubah email dan telepon Contact.
+9. Ubah chips Courses.
+10. Buka halaman public dan pastikan perubahan tampil.
+11. Kembalikan isi ke default jika diperlukan.
 
 Output tahap ini:
 
 - Test utama tersedia.
-- Checklist manual sudah dijalankan.
+- Checklist manual selesai.
+- Tidak ada regresi pada course grid.
 
----
+### Tahap 11: Dokumentasi untuk Admin dan Developer
 
-## Tahap 12: Polishing UI dan Dokumentasi
-
-Estimasi: 0.5 sampai 1 hari.
-
-Tujuan tahap ini adalah membuat fitur cukup nyaman dipakai dan mudah dilanjutkan.
+Estimasi: 0.5 hari.
 
 Yang harus dilakukan:
 
-1. Rapikan empty state:
-   - course belum ada.
-   - lesson belum ada.
-   - submission belum ada.
-   - komentar belum ada.
-2. Tambahkan pesan sukses/error setelah action admin dan user.
-3. Pastikan tampilan mobile tidak rusak.
-4. Dokumentasikan cara memakai fitur:
-   - cara membuat course.
-   - cara membuat sub bab.
-   - cara menambah block.
-   - cara membuat tugas.
-   - cara review submission.
-5. Tambahkan catatan teknis di README jika ada setup baru:
-   - library WYSIWYG.
-   - `php artisan storage:link`.
-   - batas upload.
+1. Tambahkan catatan di README atau dokumen internal:
+   - cara menjalankan seeder.
+   - cara mengakses menu admin konten halaman.
+   - cara upload gambar.
+   - lokasi config fallback.
+2. Jelaskan bahwa form contact dan newsletter masih tampilan saja.
+3. Jelaskan bahwa filter chips courses masih tampilan saja kecuali dibuat task lanjutan.
+4. Dokumentasikan struktur `page_contents.content` agar developer berikutnya tidak menebak-nebak.
 
 Output tahap ini:
 
-- UI lebih stabil.
-- Developer berikutnya bisa memahami alur tanpa membaca semua kode.
-
----
-
-## Estimasi Total
-
-Estimasi realistis untuk junior programmer:
-
-| Tahap | Estimasi |
-| --- | --- |
-| Pelajari Stitch MCP dan struktur project | 0.5 - 1 hari |
-| Data model dan migration | 1 - 1.5 hari |
-| Routing dan controller dasar | 1 hari |
-| Admin course management | 1 - 1.5 hari |
-| Lesson tree builder | 1.5 - 2 hari |
-| WYSIWYG dan content blocks | 2 - 3 hari |
-| Assignment dan upload PDF | 1 - 1.5 hari |
-| Komentar course | 0.5 - 1 hari |
-| Public course reader | 1 - 1.5 hari |
-| Security dan validasi | 1 hari |
-| Testing | 1 - 1.5 hari |
-| Polishing dan dokumentasi | 0.5 - 1 hari |
-
-Total estimasi: 12 sampai 18 hari kerja untuk junior programmer.
-
-Jika dikerjakan oleh AI model lebih murah dengan review manusia berkala, rekomendasinya pecah menjadi task kecil per tahap dan lakukan review setelah setiap tahap selesai. Jangan minta AI mengerjakan semua fitur sekaligus karena risiko salah desain data dan bug upload file cukup tinggi.
-
----
-
-## Urutan Implementasi yang Disarankan
-
-1. Selesaikan data model dulu.
-2. Selesaikan admin CRUD course.
-3. Selesaikan lesson tree.
-4. Selesaikan render public course/lesson sederhana.
-5. Tambahkan WYSIWYG.
-6. Tambahkan content blocks satu per satu.
-7. Tambahkan assignment PDF.
-8. Tambahkan submission PDF.
-9. Tambahkan komentar course.
-10. Tambahkan admin review dan moderation.
-11. Tambahkan test.
-12. Polish UI.
+- Developer berikutnya bisa melanjutkan tanpa membaca semua Blade.
+- Admin tahu bagian mana yang bisa diedit.
 
 ---
 
@@ -658,28 +673,55 @@ Jika dikerjakan oleh AI model lebih murah dengan review manusia berkala, rekomen
 
 Fitur dianggap selesai jika:
 
-1. Admin bisa membuat course published dan draft.
-2. Admin bisa membuat sub bab bertingkat minimal sampai 3 level.
-3. Admin bisa mengisi lesson dengan WYSIWYG.
-4. Admin bisa menambah block card, accordion, book card, text link, button link, image, YouTube embed, dan PDF.
-5. User bisa membuka course published dan membaca semua lesson published.
-6. Komentar tampil di bawah halaman course.
-7. User login bisa menulis komentar.
-8. Admin bisa mengaktifkan tugas pada course atau lesson.
-9. Admin bisa upload PDF tugas.
-10. User bisa upload PDF submission.
-11. File selain PDF ditolak untuk tugas dan submission.
-12. Admin bisa melihat dan review submission.
-13. Draft course/lesson tidak tampil di public.
-14. Route admin tidak bisa diakses user biasa.
+1. Halaman Home, About, Contact, dan Courses mengambil konten dari database atau fallback config.
+2. Isi awal sama dengan tampilan hardcoded saat ini.
+3. Admin bisa mengedit konten setiap halaman dari dashboard admin.
+4. Admin bisa mengganti gambar utama yang relevan.
+5. Course grid di `/courses` tetap memakai data `$courses`.
+6. Course preview di Home tetap memakai data `$latestCourses`.
+7. Jika data `page_contents` belum ada, halaman tetap tampil normal dari fallback.
+8. Route admin konten halaman hanya bisa diakses admin.
+9. Input admin divalidasi.
+10. Tidak ada HTML/script mentah dari admin yang dirender tanpa sanitasi.
+11. Tampilan mobile dan desktop tidak berubah signifikan dari baseline.
+12. Tidak ada error saat menjalankan test utama.
 
 ---
 
-## Catatan untuk Implementer
+## Task Breakdown yang Disarankan untuk Junior atau AI Model Murah
 
-- Jangan mulai dari UI kompleks sebelum data model assignment dan comment final.
-- Jangan menyimpan iframe YouTube mentah dari input user/admin. Simpan URL atau video id, lalu render iframe dari template yang aman.
-- Jangan render HTML WYSIWYG tanpa sanitasi.
-- Jangan membuat komentar di bawah lesson jika requirement tetap menyebut komentar per course.
-- Jangan membuat submission langsung ke lesson jika requirement membutuhkan tugas bisa berada di akhir course.
-- Untuk versi pertama, prioritaskan fitur berjalan stabil dibanding drag and drop dan editor block yang terlalu kompleks.
+Kerjakan berurutan dalam task kecil:
+
+1. Tambah migration dan model `PageContent`.
+2. Tambah `config/public_pages.php` berisi isi default persis seperti sekarang.
+3. Tambah seeder `PageContentSeeder`.
+4. Tambah `PageContentService`.
+5. Ubah route Home, About, Contact, dan controller Courses agar mengirim `$pageContent`.
+6. Refactor `home.blade.php`.
+7. Refactor `about.blade.php`.
+8. Refactor `contact.blade.php`.
+9. Refactor `courses.blade.php`.
+10. Tambah route dan controller admin page content.
+11. Tambah view admin edit Home.
+12. Tambah view admin edit About.
+13. Tambah view admin edit Contact.
+14. Tambah view admin edit Courses.
+15. Tambah upload gambar.
+16. Tambah validasi dan test.
+17. Bandingkan ulang tampilan dengan baseline.
+
+Jangan meminta AI model murah mengerjakan semua sekaligus. Minta satu task, review diff, jalankan test, lalu lanjut ke task berikutnya.
+
+---
+
+## Catatan Penting untuk Implementer
+
+- Jangan menghapus dynamic course yang sudah ada.
+- Jangan membuat form contact benar-benar submit pesan kecuali ada requirement baru.
+- Jangan membuat newsletter benar-benar menyimpan subscriber kecuali ada requirement baru.
+- Jangan membuat filter chips benar-benar memfilter kursus kecuali masuk scope tambahan.
+- Jangan hardcode ulang isi lama di Blade setelah fitur dinamis dibuat; isi lama harus berada di config/seeder/database.
+- Gunakan `Storage::url($path)` untuk file upload dari disk public.
+- Gunakan `data_get()` agar akses konten nested lebih aman.
+- Gunakan escaping Blade default untuk teks dari admin.
+- Jaga class Tailwind dan struktur markup semirip mungkin agar visual tidak berubah.
