@@ -72,10 +72,18 @@
                 <div class="bg-surface rounded-3xl border border-primary/10 overflow-hidden">
                     @forelse($course->lessons->whereNull('parent_id') as $index => $chapter)
                         <div class="border-b border-primary/5 last:border-0">
-                            <div class="px-6 py-4 bg-white/50 flex items-center justify-between">
-                                <h3 class="font-bold text-on-surface">Bab {{ $index + 1 }}: {{ $chapter->title }}</h3>
-                                <span class="text-xs font-bold text-on-surface-variant">{{ $chapter->children->count() }} Sub-bab</span>
-                            </div>
+                            <a href="{{ route('courses.lesson', [$course, $chapter]) }}" class="px-6 py-4 bg-white/50 flex items-center justify-between gap-4 hover:bg-surface/50 transition-colors group">
+                                <div class="min-w-0">
+                                    <h3 class="font-bold text-on-surface group-hover:text-primary transition-colors">Bab {{ $index + 1 }}: {{ $chapter->title }}</h3>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    @if(($chapter->active_assignments_count ?? 0) > 0)
+                                        <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Tugas</span>
+                                    @endif
+                                    <span class="text-xs font-bold text-on-surface-variant">{{ $chapter->children->count() }} Sub-bab</span>
+                                    <span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">chevron_right</span>
+                                </div>
+                            </a>
                             @if($chapter->children->count() > 0)
                                 <div class="divide-y divide-primary/5 bg-white">
                                     @foreach($chapter->children as $subLesson)
@@ -84,16 +92,12 @@
                                                 <span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">play_circle</span>
                                                 <span class="text-on-surface-variant group-hover:text-primary transition-colors font-medium">{{ $subLesson->title }}</span>
                                             </div>
+                                            @if(($subLesson->active_assignments_count ?? 0) > 0)
+                                                <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex-shrink-0">Tugas</span>
+                                            @endif
                                         </a>
                                     @endforeach
                                 </div>
-                            @else
-                                <a href="{{ route('courses.lesson', [$course, $chapter]) }}" class="px-8 py-4 flex items-center justify-between hover:bg-surface/50 transition-colors bg-white group">
-                                    <div class="flex items-center gap-3">
-                                        <span class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors">play_circle</span>
-                                        <span class="text-on-surface-variant group-hover:text-primary transition-colors font-medium">Masuk ke Bab</span>
-                                    </div>
-                                </a>
                             @endif
                         </div>
                     @empty

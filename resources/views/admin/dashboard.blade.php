@@ -68,18 +68,48 @@
         </div>
     </div>
 
-    <!-- Recent Activity Placeholder -->
     <div class="bg-white rounded-[2.5rem] p-8 border border-primary/5 premium-shadow">
         <div class="flex items-center justify-between mb-8">
             <h2 class="font-headline-md text-xl font-bold text-on-surface">Aktivitas Terbaru</h2>
-            <button class="text-primary font-bold text-sm hover:underline">Lihat Semua</button>
+            <button class="text-primary font-bold text-sm hover:underline" disabled>Lihat Semua</button>
         </div>
-        <div class="flex flex-col items-center justify-center py-12 text-center">
-            <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center text-on-surface-variant/50 mb-4">
-                <span class="material-symbols-outlined text-4xl">history</span>
+        
+        @if($activities->isEmpty())
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center text-on-surface-variant/50 mb-4">
+                    <span class="material-symbols-outlined text-4xl">history</span>
+                </div>
+                <h3 class="font-title-lg text-on-surface mb-2">Belum ada aktivitas</h3>
+                <p class="text-on-surface-variant font-body-md max-w-md">Data aktivitas pengguna dan pendaftaran kursus akan muncul di sini.</p>
             </div>
-            <h3 class="font-title-lg text-on-surface mb-2">Belum ada aktivitas</h3>
-            <p class="text-on-surface-variant font-body-md max-w-md">Data aktivitas pengguna dan pendaftaran kursus akan muncul di sini.</p>
-        </div>
+        @else
+            <div class="space-y-6">
+                @foreach($activities as $activity)
+                    @if($activity['url'])
+                        <a href="{{ $activity['url'] }}" class="flex items-start gap-4 p-4 rounded-2xl hover:bg-surface/50 transition-colors group">
+                    @else
+                        <div class="flex items-start gap-4 p-4 rounded-2xl">
+                    @endif
+                        <div class="w-12 h-12 rounded-full {{ $activity['badge_color'] }} flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined">{{ $activity['icon'] }}</span>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-on-surface {{ $activity['url'] ? 'group-hover:text-primary transition-colors' : '' }}">{{ $activity['title'] }}</h3>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ $activity['badge_color'] }}">{{ $activity['label'] }}</span>
+                                </div>
+                                <span class="text-xs font-medium text-on-surface-variant" title="{{ $activity['time']->format('d M Y, H:i') }}">{{ $activity['time']->diffForHumans() }}</span>
+                            </div>
+                            <p class="text-sm text-on-surface-variant">{{ $activity['description'] }}</p>
+                        </div>
+                    @if($activity['url'])
+                        </a>
+                    @else
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        @endif
     </div>
 @endsection

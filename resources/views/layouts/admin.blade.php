@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html class="light" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -16,6 +17,7 @@
         }
     </style>
 </head>
+
 <body class="bg-[#faf8ff] font-body-md text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed antialiased overflow-hidden" x-data="{ sidebarOpen: false }">
 
     <div class="flex h-screen w-full">
@@ -44,13 +46,9 @@
                     <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.courses.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">school</span>
                     Kursus
                 </a>
-                <a href="{{ route('admin.pages.index') }}" class="flex items-center gap-4 px-4 py-3 rounded-2xl {{ request()->routeIs('admin.pages.*') ? 'bg-primary/10 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium' }}">
-                    <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.pages.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">description</span>
-                    Konten Halaman
-                </a>
-                <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium">
-                    <span class="material-symbols-outlined text-[22px]">group</span>
-                    Pengguna (Segera)
+                <a href="{{ route('admin.users.index') }}" class="flex items-center gap-4 px-4 py-3 rounded-2xl {{ request()->routeIs('admin.users.*') ? 'bg-primary/10 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium' }}">
+                    <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.users.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">group</span>
+                    Pengguna
                 </a>
                 <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium">
                     <span class="material-symbols-outlined text-[22px]">settings</span>
@@ -76,7 +74,7 @@
 
         <!-- Main Content Wrapper -->
         <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
-            
+
             <!-- Top Navbar -->
             <header class="h-20 bg-white/80 backdrop-blur-xl border-b border-primary/5 flex items-center justify-between px-4 lg:px-8 z-30 sticky top-0 flex-shrink-0">
                 <div class="flex items-center gap-4">
@@ -85,7 +83,7 @@
                     </button>
                     <h2 class="font-headline-md text-xl font-bold text-on-background">@yield('title', 'Dashboard')</h2>
                 </div>
-                
+
                 <div class="flex items-center gap-4">
                     <button class="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative">
                         <span class="material-symbols-outlined text-[20px]">notifications</span>
@@ -113,4 +111,5 @@
         </div>
     </div>
 </body>
+
 </html>

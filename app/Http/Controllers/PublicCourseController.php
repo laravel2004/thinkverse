@@ -7,6 +7,24 @@ use App\Models\Lesson;
 
 class PublicCourseController extends Controller
 {
+    private function loadPublishedLessonNavigation(Course $course): void
+    {
+        $course->load(['lessons' => function($q) {
+            $q->where('status', 'published')
+                ->with(['children' => function ($q) {
+                    $q->where('status', 'published')
+                        ->withCount(['assignments as active_assignments_count' => function ($q) {
+                            $q->where('is_active', true);
+                        }])
+                        ->orderBy('sort_order');
+                }])
+                ->withCount(['assignments as active_assignments_count' => function ($q) {
+                    $q->where('is_active', true);
+                }])
+                ->orderBy('sort_order');
+        }]);
+    }
+
     public function index()
     {
         $courses = Course::where('status', 'published')->orderBy('sort_order')->orderBy('created_at', 'desc')->paginate(12);
@@ -36,9 +54,7 @@ class PublicCourseController extends Controller
             abort(404);
         }
 
-        $course->load(['lessons' => function($q) {
-            $q->where('status', 'published')->orderBy('sort_order');
-        }]);
+        $this->loadPublishedLessonNavigation($course);
 
         $firstLesson = $course->lessons->whereNull('parent_id')->first();
 
@@ -55,9 +71,7 @@ class PublicCourseController extends Controller
             $q->orderBy('sort_order');
         }]);
 
-        $course->load(['lessons' => function($q) {
-            $q->where('status', 'published')->orderBy('sort_order');
-        }]);
+        $this->loadPublishedLessonNavigation($course);
 
         // Load assignments if any
         $assignments = $lesson->assignments()->where('is_active', true)->get();
