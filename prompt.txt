@@ -2,15 +2,9 @@ buatkan issue.md yang berisi perencanaan untuk nanti di implementasi
 oleh junior programmer atau ai model yang lebih murah
 
 isi dari planning nya adalah sebagai berikut
-1. pelajari mcp dari sticth terlebih dahulu.
-2. buatkan module kursus.
-3. module kursus itu nanti isinya ada sub sub bab yang bisa bertingkat.
-4. untuk textnya buat dengan WYSWYG editor.
-5. buat build component seperti card, accodion, card untuk buku, link di text, link dengan button, gambar upload, embed video youtube, upload file pdf.
-6. setiap course ada komentar di bagian bawah sendiri.
-7. jika admin mengaktifkan pengumpulan tugas. admin bisa upload tugas dan user nanti bisa mengsubmit tugas.
-8. upload tugas menggunakan upload pdf aja dan mengumpulkannya juga gitu.
-9. tugas bisa ada di akhir atau di setiap sub bab atau sectionnya
+1. lihat di endpoint ini http://127.0.0.1:8000/courses/independent-financial-freedom/lessons/independent-6a2c246f7a910
+2. kenapa di Bab 1: Apa itu Independent tidak bisa di click padahal disitu ada penugasannya.
+3. coba benarkan itu
 
 
 

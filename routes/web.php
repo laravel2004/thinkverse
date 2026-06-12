@@ -28,15 +28,9 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        $stats = [
-            'students' => \App\Models\User::where('role', 'user')->count(),
-            'courses' => \App\Models\Course::count(),
-            'submissions' => \App\Models\Submission::count(),
-            'lessons' => \App\Models\Lesson::count(),
-        ];
-        return view('admin.dashboard', compact('stats'));
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
 
     Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
     Route::resource('courses.lessons', \App\Http\Controllers\Admin\LessonController::class)->shallow();

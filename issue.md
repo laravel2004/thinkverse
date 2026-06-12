@@ -1,656 +1,530 @@
-# Planning Implementasi Modul Kursus ThinkVerse
+# Planning Perbaikan Bab Parent Tidak Bisa Diklik Saat Memiliki Penugasan
 
-Dokumen ini adalah panduan implementasi untuk junior programmer atau AI model yang lebih murah. Fokusnya adalah membuat modul kursus yang bisa dikelola admin, memiliki sub bab bertingkat, konten WYSIWYG, komponen konten reusable, komentar, dan pengumpulan tugas PDF.
+Dokumen ini adalah panduan implementasi untuk junior programmer atau AI model yang lebih murah. Scope fitur dibuat spesifik: memperbaiki navigasi lesson pada endpoint berikut agar Bab parent yang memiliki penugasan tetap bisa diklik dan user bisa membuka halaman tugasnya.
 
-Target implementasi harus tetap mengikuti struktur Laravel yang sudah ada di project ini. Saat dokumen ini dibuat, project sudah memiliki model dan migration awal untuk `Course`, `Lesson`, `Comment`, dan `Submission`, tetapi relasi model, controller, validasi, UI admin, UI user, dan beberapa kebutuhan assignment masih perlu dirapikan.
+Endpoint yang perlu dicek:
 
----
+```text
+http://127.0.0.1:8000/courses/independent-financial-freedom/lessons/independent-6a2c246f7a910
+```
 
-## Tujuan Fitur
+Masalah yang dilaporkan:
 
-1. Admin bisa membuat dan mengelola kursus.
-2. Setiap kursus memiliki section/sub bab yang bisa bertingkat.
-3. Konten kursus dibuat memakai WYSIWYG editor.
-4. Admin bisa menyusun konten dari komponen seperti card, accordion, card buku, link text, link button, gambar, embed YouTube, dan PDF.
-5. Setiap kursus memiliki area komentar di bagian bawah halaman kursus.
-6. Admin bisa mengaktifkan tugas untuk kursus, section, atau sub bab tertentu.
-7. Tugas hanya memakai upload PDF, baik untuk file tugas dari admin maupun submission user.
-8. User bisa melihat kursus, membaca sub bab, berkomentar, dan submit tugas PDF.
+```text
+Bab 1: Apa itu Independent tidak bisa diklik, padahal di Bab tersebut ada penugasan.
+```
 
 ---
 
-## Diagram Alur Utama
+## Tujuan Perbaikan
+
+1. Bab parent di sidebar course navigation bisa diklik.
+2. Jika Bab parent memiliki penugasan, user bisa membuka halaman Bab tersebut untuk melihat dan submit tugas.
+3. Bab parent tetap bisa memiliki sub-bab.
+4. Sub-bab tetap bisa diklik seperti sekarang.
+5. UI sidebar tetap jelas membedakan:
+   - Bab parent.
+   - Sub-bab.
+   - item yang sedang aktif.
+   - Bab/sub-bab yang memiliki tugas.
+6. Tidak ada perubahan besar pada struktur database jika tidak diperlukan.
+
+---
+
+## Dugaan Penyebab
+
+Berdasarkan struktur view lesson saat ini, file yang perlu diperiksa adalah:
+
+```text
+resources/views/pages/courses/lesson.blade.php
+```
+
+Di sidebar `Daftar Materi`, Bab parent dirender seperti ini:
+
+```blade
+<div class="px-6 py-3 bg-surface/30">
+    <h4>Bab {{ $index + 1 }}: {{ $chapter->title }}</h4>
+</div>
+```
+
+Jika Bab memiliki children/sub-bab, yang menjadi link hanya sub-bab:
+
+```blade
+@foreach($chapter->children as $subLesson)
+    <a href="{{ route('courses.lesson', [$course, $subLesson]) }}">
+        {{ $subLesson->title }}
+    </a>
+@endforeach
+```
+
+Artinya, parent Bab tidak bisa diklik ketika memiliki sub-bab. Ini bermasalah jika assignment/penugasan dipasang pada parent Bab, karena user tidak bisa membuka halaman parent Bab dari navigasi sidebar.
+
+---
+
+## Diagram Alur / Flowchart
 
 ```mermaid
 flowchart TD
-    Start([Mulai]) --> Study[Pelajari Stitch MCP dan struktur project]
-    Study --> DataModel[Desain ulang data model kursus, lesson, content block, assignment, submission, comment]
-    DataModel --> AdminCourse[Admin membuat kursus]
-    AdminCourse --> AdminLessons[Admin membuat section/sub bab bertingkat]
-    AdminLessons --> Editor[Admin mengisi konten dengan WYSIWYG dan content blocks]
-    Editor --> TaskCheck{Tugas diaktifkan?}
-    TaskCheck -- Tidak --> Publish[Publish kursus]
-    TaskCheck -- Ya --> UploadTask[Admin upload file tugas PDF dan instruksi]
-    UploadTask --> Publish
-    Publish --> UserOpen[User membuka detail kursus]
-    UserOpen --> ReadContent[User membaca konten dan membuka sub bab]
-    ReadContent --> NeedSubmit{Ada tugas aktif?}
-    NeedSubmit -- Tidak --> Comment[User komentar di bawah kursus]
-    NeedSubmit -- Ya --> SubmitPDF[User upload submission PDF]
-    SubmitPDF --> Comment
-    Comment --> AdminReview[Admin moderasi komentar dan review submission]
-    AdminReview --> End([Selesai])
-```
+    Start([User membuka halaman lesson]) --> LoadCourse[Load course dan daftar lesson published]
+    LoadCourse --> RenderSidebar[Render sidebar Daftar Materi]
+    RenderSidebar --> CheckChapter{Bab parent punya sub-bab?}
+    CheckChapter -- Tidak --> RenderSingleLink[Render link Masuk ke Bab]
+    CheckChapter -- Ya --> CurrentProblem[Render judul Bab sebagai teks biasa]
+    CurrentProblem --> UserCannotClick[User tidak bisa klik Bab parent]
+    UserCannotClick --> AssignmentHidden{Bab parent punya tugas?}
+    AssignmentHidden -- Ya --> TaskNotReachable[Tugas tidak mudah diakses dari sidebar]
+    AssignmentHidden -- Tidak --> LessCritical[Tidak terasa bermasalah]
 
-## Diagram Relasi Data
-
-```mermaid
-erDiagram
-    USERS ||--o{ COMMENTS : writes
-    USERS ||--o{ SUBMISSIONS : submits
-    COURSES ||--o{ LESSONS : contains
-    COURSES ||--o{ COMMENTS : has
-    COURSES ||--o{ ASSIGNMENTS : may_have
-    LESSONS ||--o{ LESSONS : has_children
-    LESSONS ||--o{ CONTENT_BLOCKS : has
-    LESSONS ||--o{ ASSIGNMENTS : may_have
-    ASSIGNMENTS ||--o{ SUBMISSIONS : receives
-
-    COURSES {
-        id bigint
-        title string
-        slug string
-        excerpt text
-        description longText
-        thumbnail_path string
-        category string
-        level string
-        status string
-        sort_order int
-        published_at timestamp
-    }
-
-    LESSONS {
-        id bigint
-        course_id bigint
-        parent_id bigint
-        title string
-        slug string
-        content longText
-        status string
-        sort_order int
-    }
-
-    CONTENT_BLOCKS {
-        id bigint
-        lesson_id bigint
-        type string
-        payload json
-        sort_order int
-    }
-
-    ASSIGNMENTS {
-        id bigint
-        course_id bigint
-        lesson_id bigint
-        title string
-        instruction longText
-        file_path string
-        is_active boolean
-        due_at timestamp
-    }
-
-    SUBMISSIONS {
-        id bigint
-        assignment_id bigint
-        user_id bigint
-        file_path string
-        status string
-        score int
-        feedback text
-        submitted_at timestamp
-    }
-
-    COMMENTS {
-        id bigint
-        course_id bigint
-        user_id bigint
-        parent_id bigint
-        body text
-        status string
-    }
+    RenderSidebar --> Fix[Perbaikan: render Bab parent sebagai link]
+    Fix --> ParentClickable[Bab parent bisa diklik]
+    ParentClickable --> OpenParentLesson[Buka route courses.lesson untuk parent Bab]
+    OpenParentLesson --> LoadAssignments[Controller load assignment untuk lesson parent]
+    LoadAssignments --> ShowTask[Tampilkan Tugas & Evaluasi]
+    ShowTask --> End([Selesai])
 ```
 
 ---
 
-## Tahap 1: Pelajari Stitch MCP dan Struktur Project
+## Tahap 1: Reproduksi Masalah di Browser
 
-Estimasi: 0.5 sampai 1 hari.
+Estimasi: 30 sampai 45 menit.
 
-Tujuan tahap ini adalah memahami cara kerja MCP Stitch sebelum coding UI, lalu mencocokkannya dengan struktur Laravel yang sudah ada.
-
-Yang harus dilakukan:
-
-1. Pelajari kemampuan MCP Stitch yang tersedia, terutama:
-   - `create_project` untuk membuat project desain/prototype jika diperlukan.
-   - `generate_screen_from_text` untuk membuat screen awal dari prompt.
-   - `edit_screens` untuk revisi screen.
-   - `generate_variants` untuk membuat alternatif UI.
-   - `list_design_systems`, `create_design_system`, dan `apply_design_system` untuk konsistensi desain.
-2. Tentukan apakah Stitch dipakai hanya untuk referensi desain atau menjadi sumber utama mockup UI.
-3. Buat daftar screen yang perlu ada:
-   - Admin course index.
-   - Admin create/edit course.
-   - Admin lesson tree builder.
-   - Admin content editor.
-   - Admin assignment manager.
-   - Admin submission review.
-   - Public course list.
-   - Public course detail.
-   - Public lesson reader.
-   - Public comment and submission area.
-4. Baca file project yang relevan:
-   - `routes/web.php`
-   - `app/Models/Course.php`
-   - `app/Models/Lesson.php`
-   - `app/Models/Comment.php`
-   - `app/Models/Submission.php`
-   - migration pada folder `database/migrations`
-   - layout Blade pada `resources/views/layouts`
-5. Catat gap antara database saat ini dan kebutuhan fitur. Saat ini `comments` masih terhubung ke `lesson_id`, sedangkan requirement meminta komentar di bawah course. Saat ini `submissions` masih langsung ke `lesson_id`, sedangkan requirement membutuhkan tugas bisa di akhir course atau di setiap sub bab.
-
-Output tahap ini:
-
-- Catatan singkat cara memakai Stitch MCP untuk desain.
-- Daftar screen final.
-- Keputusan struktur data final sebelum migration dibuat.
-
----
-
-## Tahap 2: Finalisasi Data Model dan Migration
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah memastikan database mampu menangani course, sub bab bertingkat, content blocks, komentar course, assignment fleksibel, dan submission PDF.
+Tujuan tahap ini adalah memastikan masalah benar terjadi dan tidak salah membaca data.
 
 Yang harus dilakukan:
 
-1. Lengkapi model `Course`:
-   - Tambahkan `$fillable`.
-   - Tambahkan relasi `lessons()`, `comments()`, dan `assignments()`.
-   - Tambahkan scope `published()` jika diperlukan.
-2. Lengkapi model `Lesson`:
-   - Tambahkan `$fillable`.
-   - Tambahkan relasi `course()`, `parent()`, `children()`, `contentBlocks()`, dan `assignments()`.
-   - Gunakan `parent_id` untuk struktur bertingkat.
-   - Urutan tampil memakai `sort_order`.
-3. Ubah desain komentar:
-   - Komentar harus berada di level course, bukan hanya lesson.
-   - Buat migration untuk mengganti `lesson_id` menjadi `course_id` pada `comments`, atau buat ulang migration jika database masih development.
-   - Tetap boleh ada `parent_id` untuk reply komentar.
-4. Buat tabel `content_blocks`:
-   - Kolom: `id`, `lesson_id`, `type`, `payload`, `sort_order`, timestamps.
-   - `type` berisi: `wysiwyg`, `card`, `accordion`, `book_card`, `text_link`, `button_link`, `image`, `youtube_embed`, `pdf_file`.
-   - `payload` berupa JSON agar setiap block fleksibel menyimpan data berbeda.
-5. Buat tabel `assignments`:
-   - Kolom minimal: `id`, `course_id`, `lesson_id nullable`, `title`, `instruction`, `file_path`, `is_active`, `due_at nullable`, timestamps.
-   - Jika `lesson_id` kosong, artinya tugas berada di akhir course.
-   - Jika `lesson_id` terisi, artinya tugas berada pada sub bab/section tersebut.
-6. Refactor `submissions`:
-   - Submission sebaiknya terhubung ke `assignment_id`, bukan langsung ke `lesson_id`.
-   - Kolom minimal: `assignment_id`, `user_id`, `file_path`, `status`, `score`, `feedback`, `submitted_at`.
-   - Pastikan satu user hanya memiliki satu submission aktif per assignment, atau tentukan apakah boleh resubmit.
-7. Jalankan migration dan pastikan tidak error.
+1. Jalankan server lokal:
+
+```bash
+php artisan serve
+```
+
+2. Buka endpoint:
+
+```text
+http://127.0.0.1:8000/courses/independent-financial-freedom/lessons/independent-6a2c246f7a910
+```
+
+3. Lihat sidebar `Daftar Materi`.
+4. Cari item:
+
+```text
+Bab 1: Apa itu Independent
+```
+
+5. Coba klik teks Bab tersebut.
+6. Catat hasil:
+   - apakah pointer berubah menjadi link.
+   - apakah URL berubah.
+   - apakah halaman parent Bab terbuka.
+   - apakah section `Tugas & Evaluasi` muncul.
+7. Klik sub-bab di bawahnya untuk memastikan sub-bab masih normal.
+8. Ambil screenshot sebelum perbaikan jika diperlukan untuk dokumentasi.
 
 Output tahap ini:
 
-- Migration final.
-- Model dengan relasi lengkap.
-- Database bisa menyimpan struktur kursus bertingkat dan assignment fleksibel.
+- Bug berhasil direproduksi.
+- Implementer tahu bahwa masalah ada di navigasi Bab parent.
 
 ---
 
-## Tahap 3: Routing dan Controller Dasar
+## Tahap 2: Audit Data Lesson dan Assignment
 
-Estimasi: 1 hari.
+Estimasi: 45 menit sampai 1 jam.
 
-Tujuan tahap ini adalah menyiapkan endpoint admin dan user secara jelas.
+Tujuan tahap ini adalah memastikan penugasan memang terpasang di Bab parent, bukan di sub-bab.
 
 Yang harus dilakukan:
 
-1. Buat route admin dengan middleware `auth` dan role admin:
-   - `GET /admin/courses`
-   - `GET /admin/courses/create`
-   - `POST /admin/courses`
-   - `GET /admin/courses/{course}/edit`
-   - `PUT /admin/courses/{course}`
-   - `DELETE /admin/courses/{course}`
-   - `GET /admin/courses/{course}/lessons`
-   - `POST /admin/courses/{course}/lessons`
-   - `PUT /admin/lessons/{lesson}`
-   - `DELETE /admin/lessons/{lesson}`
-   - `POST /admin/lessons/{lesson}/blocks`
-   - `PUT /admin/blocks/{block}`
-   - `DELETE /admin/blocks/{block}`
-   - `POST /admin/assignments`
-   - `PUT /admin/assignments/{assignment}`
-   - `GET /admin/assignments/{assignment}/submissions`
-2. Buat route public/user:
-   - `GET /courses`
-   - `GET /courses/{course:slug}`
-   - `GET /courses/{course:slug}/lessons/{lesson:slug}`
-   - `POST /courses/{course}/comments`
-   - `POST /assignments/{assignment}/submit`
-3. Buat controller:
-   - `Admin/CourseController`
-   - `Admin/LessonController`
-   - `Admin/ContentBlockController`
-   - `Admin/AssignmentController`
-   - `Admin/SubmissionReviewController`
-   - `CourseController`
-   - `LessonReaderController`
-   - `CommentController`
-   - `SubmissionController`
-4. Gunakan Form Request untuk validasi:
-   - `StoreCourseRequest`
-   - `UpdateCourseRequest`
-   - `StoreLessonRequest`
-   - `UpdateLessonRequest`
-   - `StoreContentBlockRequest`
-   - `StoreAssignmentRequest`
-   - `SubmitAssignmentRequest`
-5. Pastikan semua route yang menerima upload file memakai validasi ukuran dan MIME type.
+1. Cek data course berdasarkan slug:
+
+```php
+Course::where('slug', 'independent-financial-freedom')->first()
+```
+
+2. Cek lesson berdasarkan slug:
+
+```php
+Lesson::where('slug', 'independent-6a2c246f7a910')->first()
+```
+
+3. Cari Bab parent dengan title:
+
+```text
+Apa itu Independent
+```
+
+4. Pastikan field penting:
+   - `id`
+   - `course_id`
+   - `parent_id`
+   - `slug`
+   - `status`
+   - `sort_order`
+5. Cek assignment yang terhubung ke lesson tersebut:
+
+```php
+Assignment::where('lesson_id', $chapter->id)->where('is_active', true)->get()
+```
+
+6. Pastikan route parent lesson bisa diakses manual:
+
+```text
+/courses/{courseSlug}/lessons/{chapterSlug}
+```
+
+7. Jika route manual parent lesson bisa dibuka dan tugas tampil, maka bug hanya di sidebar link.
+8. Jika route manual parent lesson tidak menampilkan tugas, lanjut cek controller.
 
 Output tahap ini:
 
-- Route jelas dan tidak tercampur antara admin dan public.
-- Controller minimal sudah bisa CRUD data utama.
+- Diketahui apakah assignment berada di parent Bab.
+- Diketahui apakah halaman parent Bab sebenarnya bisa dibuka melalui URL langsung.
 
 ---
 
-## Tahap 4: Admin Course Management
+## Tahap 3: Audit Controller Public Course Lesson
 
-Estimasi: 1 sampai 1.5 hari.
+Estimasi: 30 sampai 45 menit.
 
-Tujuan tahap ini adalah admin bisa membuat, mengedit, menghapus, dan publish kursus.
+Tujuan tahap ini adalah memastikan controller sudah mendukung membuka parent Bab dan mengambil tugasnya.
+
+File yang dicek:
+
+```text
+app/Http/Controllers/PublicCourseController.php
+```
 
 Yang harus dilakukan:
 
-1. Buat halaman daftar course admin:
-   - Tampilkan judul, kategori, level, status, tanggal publish, dan action.
-   - Tambahkan filter status `draft` dan `published`.
-   - Tambahkan search berdasarkan judul.
-2. Buat form create/edit course:
-   - Field: title, slug, excerpt, description, thumbnail, category, level, status, sort_order, published_at.
-   - Slug bisa otomatis dari title tetapi tetap bisa diedit.
-   - Thumbnail memakai upload image.
-3. Simpan file thumbnail ke disk Laravel, misalnya `storage/app/public/courses`.
-4. Pastikan `php artisan storage:link` sudah dijalankan di environment development/production.
-5. Tambahkan validasi:
-   - title required.
-   - slug unique.
-   - thumbnail hanya image.
-   - status hanya `draft` atau `published`.
-6. Pastikan kursus `draft` tidak muncul di halaman public.
+1. Cek method:
+
+```php
+public function lesson(Course $course, Lesson $lesson)
+```
+
+2. Pastikan validasi ini benar:
+
+```php
+if ($course->status !== 'published' || $lesson->status !== 'published' || $lesson->course_id !== $course->id) {
+    abort(404);
+}
+```
+
+3. Pastikan assignment lesson diambil dari lesson aktif:
+
+```php
+$assignments = $lesson->assignments()->where('is_active', true)->get();
+```
+
+4. Pastikan fallback course-level assignment tidak menimpa assignment lesson.
+5. Pastikan parent Bab dengan `status = published` bisa masuk ke method ini.
+6. Jika controller sudah benar, tidak perlu refactor besar.
+7. Jika parent Bab tidak punya content block tetapi punya assignment, halaman tetap harus menampilkan section `Tugas & Evaluasi`.
 
 Output tahap ini:
 
-- Admin bisa CRUD course.
-- Public hanya melihat course published.
+- Controller dipastikan mendukung assignment pada parent Bab.
+- Fokus perbaikan bisa diarahkan ke Blade sidebar.
 
 ---
 
-## Tahap 5: Lesson Tree Builder untuk Sub Bab Bertingkat
+## Tahap 4: Ubah Sidebar agar Bab Parent Bisa Diklik
 
-Estimasi: 1.5 sampai 2 hari.
+Estimasi: 1 sampai 1.5 jam.
 
-Tujuan tahap ini adalah admin bisa membuat section/sub bab bertingkat di dalam course.
+Tujuan tahap ini adalah membuat judul Bab parent menjadi link ke halaman lesson parent, meskipun Bab tersebut memiliki sub-bab.
+
+File yang diedit:
+
+```text
+resources/views/pages/courses/lesson.blade.php
+```
 
 Yang harus dilakukan:
 
-1. Buat halaman admin `Course Lessons`.
-2. Tampilkan lessons dalam bentuk tree berdasarkan `parent_id`.
-3. Setiap lesson punya:
-   - title
-   - slug
-   - excerpt
-   - parent_id
-   - status
-   - sort_order
-4. Admin bisa:
-   - tambah root section.
-   - tambah child section.
-   - edit section.
-   - hapus section.
-   - ubah urutan dengan input `sort_order` minimal dulu.
-5. Untuk versi awal, drag and drop tidak wajib. Jika ingin drag and drop, implementasi bisa dilakukan setelah CRUD stabil.
-6. Batasi tampilan tree agar mudah dibaca. Rekomendasi awal maksimal 4 level, walaupun database bisa menyimpan lebih.
-7. Pastikan slug lesson unik. Jika slug global terlalu membatasi, ubah ke unique kombinasi `course_id + slug`.
+1. Cari blok sidebar:
+
+```blade
+@foreach($course->lessons->whereNull('parent_id') as $index => $chapter)
+```
+
+2. Ubah header Bab parent dari `<div>` biasa menjadi `<a>`.
+3. Link harus mengarah ke:
+
+```blade
+route('courses.lesson', [$course, $chapter])
+```
+
+4. Pastikan active state bekerja saat lesson aktif adalah parent Bab:
+
+```blade
+$lesson->id === $chapter->id
+```
+
+5. Desain link parent harus tetap terlihat sebagai Bab, bukan seperti sub-bab biasa.
+6. Tambahkan icon yang menandakan parent Bab bisa dibuka, misalnya:
+   - `menu_book`
+   - `play_circle`
+   - `article`
+7. Jangan menghapus list children/sub-bab.
+8. Jika Bab parent memiliki children, tampilkan children di bawah link parent seperti sekarang.
+
+Contoh arah perubahan:
+
+```blade
+<a href="{{ route('courses.lesson', [$course, $chapter]) }}"
+   class="px-6 py-3 bg-surface/30 flex items-center justify-between transition-colors {{ $lesson->id === $chapter->id ? 'bg-primary/10 text-primary' : 'hover:bg-surface text-on-surface-variant' }}">
+    <h4 class="font-bold text-sm">Bab {{ $index + 1 }}: {{ $chapter->title }}</h4>
+    <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</a>
+```
 
 Output tahap ini:
 
-- Course memiliki daftar sub bab bertingkat.
-- Admin bisa mengelola urutan dan parent-child lesson.
+- Bab parent bisa diklik.
+- Sub-bab tetap bisa diklik.
+- Active state parent Bab tampil saat halaman parent Bab dibuka.
 
 ---
 
-## Tahap 6: WYSIWYG Editor dan Content Blocks
+## Tahap 5: Tambahkan Indikator Tugas di Sidebar
 
-Estimasi: 2 sampai 3 hari.
+Estimasi: 1 sampai 1.5 jam.
 
-Tujuan tahap ini adalah admin bisa membuat isi lesson dengan editor rich text dan komponen konten.
-
-Rekomendasi teknis:
-
-- Untuk WYSIWYG gunakan library yang mudah: Tiptap, TinyMCE, CKEditor, atau Quill.
-- Untuk implementasi cepat di Blade/Laravel, TinyMCE atau CKEditor lebih sederhana.
-- Simpan HTML hasil WYSIWYG ke block `type = wysiwyg`.
-- Sanitasi HTML sebelum render ke public untuk mengurangi risiko XSS.
-
-Content blocks yang harus dibuat:
-
-1. `wysiwyg`
-   - Payload: `{ "html": "..." }`
-   - Render sebagai HTML konten utama.
-2. `card`
-   - Payload: `{ "title": "...", "body": "...", "variant": "info|warning|success" }`
-   - Render sebagai kartu informasi.
-3. `accordion`
-   - Payload: `{ "items": [{ "title": "...", "body": "..." }] }`
-   - Render sebagai daftar accordion.
-4. `book_card`
-   - Payload: `{ "title": "...", "author": "...", "cover_path": "...", "description": "...", "url": "..." }`
-   - Cover opsional tetapi disarankan.
-5. `text_link`
-   - Payload: `{ "label": "...", "url": "..." }`
-   - Bisa disisipkan di area konten.
-6. `button_link`
-   - Payload: `{ "label": "...", "url": "...", "style": "primary|secondary" }`
-   - Render sebagai tombol.
-7. `image`
-   - Payload: `{ "path": "...", "alt": "...", "caption": "..." }`
-   - Upload hanya image.
-8. `youtube_embed`
-   - Payload: `{ "url": "...", "video_id": "...", "title": "..." }`
-   - Simpan `video_id`, bukan iframe mentah.
-9. `pdf_file`
-   - Payload: `{ "path": "...", "title": "...", "description": "..." }`
-   - Upload hanya PDF.
+Tujuan tahap ini adalah membuat user tahu bahwa Bab parent atau sub-bab memiliki tugas.
 
 Yang harus dilakukan:
 
-1. Buat UI admin untuk menambah block ke lesson.
-2. Buat partial Blade untuk setiap block:
-   - `resources/views/components/course-blocks/wysiwyg.blade.php`
-   - `resources/views/components/course-blocks/card.blade.php`
-   - dan seterusnya.
-3. Saat render public, loop semua block berdasarkan `sort_order`.
-4. Validasi payload per type. Jangan menerima payload bebas tanpa pengecekan.
-5. Untuk YouTube, buat helper untuk mengambil video id dari URL:
-   - `https://www.youtube.com/watch?v=...`
-   - `https://youtu.be/...`
-6. Untuk upload image dan PDF, simpan file dengan path terstruktur:
-   - image: `course-content/images`
-   - PDF: `course-content/pdfs`
+1. Load jumlah assignment aktif untuk lessons agar tidak N+1 query.
+2. Di controller, pertimbangkan update load course lessons:
+
+```php
+$course->load(['lessons' => function($q) {
+    $q->where('status', 'published')
+        ->withCount(['assignments as active_assignments_count' => function ($q) {
+            $q->where('is_active', true);
+        }])
+        ->orderBy('sort_order');
+}]);
+```
+
+3. Pastikan relasi `children` juga bisa mengetahui assignment count.
+4. Jika `children` dipanggil lewat relasi lazy, update dengan eager loading:
+
+```php
+$course->load(['lessons' => function($q) {
+    $q->where('status', 'published')
+        ->with(['children' => function ($q) {
+            $q->where('status', 'published')
+                ->withCount(['assignments as active_assignments_count' => function ($q) {
+                    $q->where('is_active', true);
+                }])
+                ->orderBy('sort_order');
+        }])
+        ->withCount(['assignments as active_assignments_count' => function ($q) {
+            $q->where('is_active', true);
+        }])
+        ->orderBy('sort_order');
+}]);
+```
+
+5. Di Blade, jika Bab punya assignment aktif, tampilkan badge kecil:
+
+```blade
+@if(($chapter->active_assignments_count ?? 0) > 0)
+    <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Tugas</span>
+@endif
+```
+
+6. Lakukan hal yang sama untuk sub-bab.
+7. Jangan membuat badge mengganggu layout mobile.
 
 Output tahap ini:
 
-- Admin bisa menyusun konten lesson dari WYSIWYG dan block.
-- Public bisa melihat konten dengan tampilan rapi.
+- User bisa melihat Bab mana yang memiliki tugas.
+- Bab parent dengan tugas lebih mudah ditemukan.
 
 ---
 
-## Tahap 7: Assignment dan Upload PDF
+## Tahap 6: Pastikan Navigasi Course Detail Konsisten
 
-Estimasi: 1 sampai 1.5 hari.
+Estimasi: 45 menit sampai 1 jam.
 
-Tujuan tahap ini adalah admin bisa membuat tugas, upload file PDF tugas, dan user bisa submit PDF.
+Tujuan tahap ini adalah memastikan halaman detail course juga tidak menyembunyikan link parent Bab.
+
+File yang dicek:
+
+```text
+resources/views/pages/courses/show.blade.php
+```
 
 Yang harus dilakukan:
 
-1. Buat form assignment admin:
-   - Pilih course.
-   - Pilih lesson opsional.
-   - Jika lesson kosong, tugas dianggap tugas akhir course.
-   - Field: title, instruction, PDF tugas, due_at, is_active.
-2. Validasi file admin:
-   - wajib PDF jika tugas membutuhkan file.
-   - MIME: `application/pdf`.
-   - Ukuran maksimal ditentukan, misalnya 10 MB.
-3. Tampilkan assignment:
-   - Di akhir halaman course jika `lesson_id` kosong.
-   - Di halaman lesson jika `lesson_id` terisi.
-4. Buat form submit user:
-   - User hanya upload PDF.
-   - User harus login.
-   - Simpan ke `storage/app/public/submissions`.
-5. Tentukan kebijakan resubmit:
-   - Rekomendasi awal: user boleh mengganti submission selama status masih `pending`.
-   - Jika status sudah `reviewed`, user tidak bisa submit ulang kecuali admin membuka ulang.
-6. Buat halaman admin review submission:
-   - Lihat daftar user, file PDF, waktu submit, status.
-   - Admin bisa memberi score dan feedback.
-   - Admin bisa ubah status menjadi `reviewed`.
+1. Cari daftar Bab di halaman course detail.
+2. Pastikan parent Bab yang memiliki children tetap bisa diklik atau minimal punya link yang jelas.
+3. Jika saat ini parent Bab hanya menjadi header saat punya children, ubah menjadi link seperti sidebar lesson.
+4. Pastikan sub-bab tetap tampil di bawahnya.
+5. Tambahkan badge `Tugas` jika parent Bab/sub-bab memiliki assignment aktif.
+6. Pastikan tombol `Mulai Belajar` tidak hanya mengarah ke parent pertama jika parent tidak dimaksudkan sebagai content page.
 
 Output tahap ini:
 
-- Admin bisa memberi tugas di akhir course atau di sub bab tertentu.
-- User bisa mengumpulkan PDF.
-- Admin bisa review submission.
+- Navigasi di course detail dan lesson page konsisten.
+- User tidak bingung mencari tugas pada parent Bab.
 
 ---
 
-## Tahap 8: Komentar Course
+## Tahap 7: Review UX untuk Bab Parent yang Punya Children
 
-Estimasi: 0.5 sampai 1 hari.
+Estimasi: 30 sampai 45 menit.
 
-Tujuan tahap ini adalah setiap course punya area komentar di bagian bawah sendiri.
+Tujuan tahap ini adalah memastikan parent Bab bisa berfungsi sebagai halaman pembuka Bab, bukan hanya label kategori.
 
-Yang harus dilakukan:
+Yang harus diputuskan:
 
-1. Tampilkan komentar di bagian bawah halaman detail course.
-2. Komentar hanya bisa dikirim oleh user login.
-3. Guest hanya melihat komentar dan CTA login.
-4. Simpan komentar dengan `course_id`, `user_id`, `body`, `status`.
-5. Jika memakai reply, gunakan `parent_id`.
-6. Tambahkan proteksi spam sederhana:
-   - body required.
-   - minimal 3 karakter.
-   - maksimal 1000 atau 2000 karakter.
-   - rate limit route komentar.
-7. Buat admin moderation minimal:
-   - tampilkan daftar komentar.
-   - admin bisa hide/unhide.
-   - status: `visible`, `hidden`, `pending`.
+1. Apakah parent Bab memang boleh punya content dan assignment?
+2. Jika ya, parent Bab wajib selalu clickable.
+3. Jika tidak, admin seharusnya tidak bisa memasang assignment pada parent Bab. Namun requirement saat ini menyebut parent Bab punya penugasan, jadi pendekatan yang benar adalah membuat parent clickable.
+4. Label yang disarankan:
+   - Parent Bab tetap: `Bab 1: Apa itu Independent`
+   - Jika punya tugas: tampilkan badge `Tugas`
+   - Children tetap sebagai sub-item.
+5. Jika parent Bab aktif, tampilkan highlight pada header Bab parent.
 
 Output tahap ini:
 
-- Course punya komentar di bagian bawah.
-- Admin bisa menyembunyikan komentar bermasalah.
+- Keputusan UX jelas.
+- Implementer tidak mengubah data assignment untuk menghindari masalah UI.
 
 ---
 
-## Tahap 9: Public Course Reader
+## Tahap 8: Testing Manual
 
-Estimasi: 1 sampai 1.5 hari.
+Estimasi: 1 sampai 1.5 jam.
 
-Tujuan tahap ini adalah user bisa membaca kursus dengan UX yang jelas.
-
-Yang harus dilakukan:
-
-1. Halaman `/courses`:
-   - Card daftar course.
-   - Filter kategori/level jika data sudah tersedia.
-   - Empty state jika belum ada course.
-2. Halaman detail course:
-   - Thumbnail, title, excerpt, description.
-   - Sidebar atau daftar isi lesson tree.
-   - Tampilkan tugas akhir course jika ada.
-   - Komentar di bagian bawah.
-3. Halaman lesson reader:
-   - Breadcrumb course.
-   - Sidebar tree sub bab.
-   - Render content blocks.
-   - Tampilkan assignment lesson jika ada.
-   - Tombol previous/next lesson berdasarkan urutan tree.
-4. Pastikan hanya course dan lesson `published` yang bisa diakses public.
-5. Jika course draft dibuka public, return 404.
-
-Output tahap ini:
-
-- User bisa membaca course dan semua sub bab.
-- Tugas dan komentar muncul di posisi yang benar.
-
----
-
-## Tahap 10: Security, Validasi, dan Sanitasi
-
-Estimasi: 1 hari.
-
-Tujuan tahap ini adalah mengurangi risiko bug dan celah keamanan.
-
-Yang harus dilakukan:
-
-1. Semua route admin wajib middleware admin.
-2. Semua route submission dan komentar wajib login.
-3. Validasi upload:
-   - image hanya `jpg`, `jpeg`, `png`, `webp`.
-   - PDF hanya `pdf`.
-   - batasi ukuran file.
-4. Sanitasi HTML WYSIWYG:
-   - Jangan render iframe bebas dari input admin.
-   - YouTube harus memakai video id yang divalidasi.
-   - Link harus valid URL.
-5. Pastikan file private atau public sesuai kebutuhan:
-   - Materi course bisa public jika kursus public.
-   - Submission user sebaiknya hanya bisa diakses admin dan pemilik.
-6. Tambahkan policy bila diperlukan:
-   - `CoursePolicy`
-   - `AssignmentPolicy`
-   - `SubmissionPolicy`
-7. Pastikan tidak ada mass assignment error dengan `$fillable`.
-
-Output tahap ini:
-
-- Upload aman.
-- Route terlindungi.
-- HTML WYSIWYG tidak membuka XSS besar.
-
----
-
-## Tahap 11: Testing Manual dan Automated Test
-
-Estimasi: 1 sampai 1.5 hari.
-
-Tujuan tahap ini adalah memastikan fitur utama tidak mudah rusak.
-
-Minimal automated test:
-
-1. Admin bisa membuat course.
-2. User biasa tidak bisa akses admin course.
-3. Course draft tidak tampil di public.
-4. Course published tampil di public.
-5. Admin bisa membuat lesson child.
-6. Public bisa membaca lesson published.
-7. User login bisa komentar di course.
-8. Guest tidak bisa komentar.
-9. Admin bisa membuat assignment course-level.
-10. Admin bisa membuat assignment lesson-level.
-11. User bisa submit PDF.
-12. Upload non-PDF untuk submission ditolak.
+Tujuan tahap ini adalah memastikan bug benar-benar selesai.
 
 Manual test:
 
-1. Buat course baru dari admin.
-2. Buat 2 root section dan 2 child section.
-3. Isi lesson dengan semua jenis block.
-4. Upload gambar, PDF materi, dan embed YouTube.
-5. Aktifkan tugas di lesson.
-6. Aktifkan tugas akhir course.
-7. Login sebagai user.
-8. Baca course dan submit PDF.
-9. Kirim komentar.
-10. Login sebagai admin dan review submission.
+1. Buka endpoint:
+
+```text
+http://127.0.0.1:8000/courses/independent-financial-freedom/lessons/independent-6a2c246f7a910
+```
+
+2. Klik `Bab 1: Apa itu Independent` di sidebar.
+3. Pastikan URL berubah ke slug parent Bab.
+4. Pastikan halaman parent Bab terbuka.
+5. Pastikan section `Tugas & Evaluasi` tampil jika Bab tersebut punya assignment aktif.
+6. Pastikan form submit tugas muncul untuk user login.
+7. Pastikan guest melihat pesan login untuk submit tugas.
+8. Klik sub-bab lain dan pastikan masih bisa dibuka.
+9. Pastikan active state berpindah sesuai item yang diklik.
+10. Cek tampilan mobile:
+    - buka menu sidebar.
+    - klik parent Bab.
+    - pastikan navigasi bekerja.
+11. Jika badge `Tugas` ditambahkan, pastikan badge tampil pada parent Bab yang punya tugas.
 
 Output tahap ini:
 
-- Test utama tersedia.
-- Checklist manual sudah dijalankan.
+- Bug parent Bab tidak bisa diklik terselesaikan.
+- Assignment pada parent Bab bisa diakses user.
+- Navigasi sub-bab tetap tidak rusak.
 
 ---
 
-## Tahap 12: Polishing UI dan Dokumentasi
+## Tahap 9: Automated Test
 
-Estimasi: 0.5 sampai 1 hari.
+Estimasi: 1 sampai 2 jam.
 
-Tujuan tahap ini adalah membuat fitur cukup nyaman dipakai dan mudah dilanjutkan.
+Tujuan tahap ini adalah mencegah bug serupa muncul lagi.
 
-Yang harus dilakukan:
+Feature test yang disarankan:
 
-1. Rapikan empty state:
-   - course belum ada.
-   - lesson belum ada.
-   - submission belum ada.
-   - komentar belum ada.
-2. Tambahkan pesan sukses/error setelah action admin dan user.
-3. Pastikan tampilan mobile tidak rusak.
-4. Dokumentasikan cara memakai fitur:
-   - cara membuat course.
-   - cara membuat sub bab.
-   - cara menambah block.
-   - cara membuat tugas.
-   - cara review submission.
-5. Tambahkan catatan teknis di README jika ada setup baru:
-   - library WYSIWYG.
-   - `php artisan storage:link`.
-   - batas upload.
+1. Parent lesson dengan children bisa dibuka melalui route `courses.lesson`.
+2. Parent lesson dengan assignment aktif menampilkan section `Tugas & Evaluasi`.
+3. Halaman lesson menampilkan link ke parent chapter meskipun parent punya children.
+4. Sub-bab tetap memiliki link.
+5. Active state parent tampil saat parent lesson sedang dibuka.
+6. Lesson draft tidak bisa dibuka public.
+7. Lesson dari course lain tidak bisa dibuka pada course yang salah.
+
+Catatan:
+
+- Test HTML bisa memakai `assertSee` untuk teks Bab dan assignment.
+- Untuk memastikan link ada, gunakan `assertSee(route('courses.lesson', [$course, $chapter]), false)` jika output HTML memungkinkan.
 
 Output tahap ini:
 
-- UI lebih stabil.
-- Developer berikutnya bisa memahami alur tanpa membaca semua kode.
+- Test memastikan parent Bab clickable.
+- Test memastikan tugas pada parent Bab tampil.
+
+---
+
+## Tahap 10: Polishing UI
+
+Estimasi: 30 sampai 45 menit.
+
+Tujuan tahap ini adalah membuat navigasi nyaman dipakai.
+
+Yang harus dilakukan:
+
+1. Pastikan parent Bab clickable punya cursor dan hover state.
+2. Pastikan warna active state parent dan sub-bab konsisten.
+3. Pastikan badge `Tugas` tidak membuat teks Bab terpotong buruk.
+4. Jika title panjang, gunakan wrap yang rapi.
+5. Pastikan sidebar masih terbaca di mobile.
+6. Jangan membuat seluruh sidebar berubah terlalu besar. Perubahan cukup di item Bab.
+
+Output tahap ini:
+
+- UI sidebar rapi.
+- User paham bahwa Bab parent bisa dibuka.
 
 ---
 
 ## Estimasi Total
 
-Estimasi realistis untuk junior programmer:
-
 | Tahap | Estimasi |
 | --- | --- |
-| Pelajari Stitch MCP dan struktur project | 0.5 - 1 hari |
-| Data model dan migration | 1 - 1.5 hari |
-| Routing dan controller dasar | 1 hari |
-| Admin course management | 1 - 1.5 hari |
-| Lesson tree builder | 1.5 - 2 hari |
-| WYSIWYG dan content blocks | 2 - 3 hari |
-| Assignment dan upload PDF | 1 - 1.5 hari |
-| Komentar course | 0.5 - 1 hari |
-| Public course reader | 1 - 1.5 hari |
-| Security dan validasi | 1 hari |
-| Testing | 1 - 1.5 hari |
-| Polishing dan dokumentasi | 0.5 - 1 hari |
+| Reproduksi masalah di browser | 30 - 45 menit |
+| Audit data lesson dan assignment | 45 menit - 1 jam |
+| Audit controller public lesson | 30 - 45 menit |
+| Ubah sidebar agar Bab parent bisa diklik | 1 - 1.5 jam |
+| Tambahkan indikator tugas di sidebar | 1 - 1.5 jam |
+| Pastikan navigasi course detail konsisten | 45 menit - 1 jam |
+| Review UX parent Bab dengan children | 30 - 45 menit |
+| Testing manual | 1 - 1.5 jam |
+| Automated test | 1 - 2 jam |
+| Polishing UI | 30 - 45 menit |
 
-Total estimasi: 12 sampai 18 hari kerja untuk junior programmer.
+Total estimasi: 7 sampai 11 jam kerja.
 
-Jika dikerjakan oleh AI model lebih murah dengan review manusia berkala, rekomendasinya pecah menjadi task kecil per tahap dan lakukan review setelah setiap tahap selesai. Jangan minta AI mengerjakan semua fitur sekaligus karena risiko salah desain data dan bug upload file cukup tinggi.
+Jika ingin implementasi paling cepat, tahap minimal yang wajib adalah:
+
+1. Reproduksi masalah.
+2. Ubah sidebar agar parent Bab menjadi link.
+3. Test manual parent Bab dan sub-bab.
+
+Estimasi minimal: 2 sampai 3 jam.
 
 ---
 
 ## Urutan Implementasi yang Disarankan
 
-1. Selesaikan data model dulu.
-2. Selesaikan admin CRUD course.
-3. Selesaikan lesson tree.
-4. Selesaikan render public course/lesson sederhana.
-5. Tambahkan WYSIWYG.
-6. Tambahkan content blocks satu per satu.
-7. Tambahkan assignment PDF.
-8. Tambahkan submission PDF.
-9. Tambahkan komentar course.
-10. Tambahkan admin review dan moderation.
-11. Tambahkan test.
-12. Polish UI.
+1. Reproduksi bug di endpoint yang dilaporkan.
+2. Pastikan assignment memang terpasang di parent Bab.
+3. Pastikan route parent Bab bisa dibuka manual.
+4. Audit `PublicCourseController::lesson`.
+5. Ubah parent Bab di sidebar dari header statis menjadi link.
+6. Tambahkan active state untuk parent Bab.
+7. Pastikan children/sub-bab tetap tampil.
+8. Tambahkan badge `Tugas` pada Bab/sub-bab yang punya assignment aktif.
+9. Samakan navigasi di halaman course detail jika perlu.
+10. Test manual desktop dan mobile.
+11. Tambahkan feature test.
 
 ---
 
@@ -658,28 +532,26 @@ Jika dikerjakan oleh AI model lebih murah dengan review manusia berkala, rekomen
 
 Fitur dianggap selesai jika:
 
-1. Admin bisa membuat course published dan draft.
-2. Admin bisa membuat sub bab bertingkat minimal sampai 3 level.
-3. Admin bisa mengisi lesson dengan WYSIWYG.
-4. Admin bisa menambah block card, accordion, book card, text link, button link, image, YouTube embed, dan PDF.
-5. User bisa membuka course published dan membaca semua lesson published.
-6. Komentar tampil di bawah halaman course.
-7. User login bisa menulis komentar.
-8. Admin bisa mengaktifkan tugas pada course atau lesson.
-9. Admin bisa upload PDF tugas.
-10. User bisa upload PDF submission.
-11. File selain PDF ditolak untuk tugas dan submission.
-12. Admin bisa melihat dan review submission.
-13. Draft course/lesson tidak tampil di public.
-14. Route admin tidak bisa diakses user biasa.
+1. `Bab 1: Apa itu Independent` bisa diklik dari sidebar lesson.
+2. Klik Bab parent membuka URL lesson parent yang benar.
+3. Parent Bab tetap bisa diklik walaupun memiliki sub-bab.
+4. Sub-bab tetap bisa diklik.
+5. Jika parent Bab memiliki assignment aktif, section `Tugas & Evaluasi` tampil pada halaman parent Bab.
+6. User login bisa melihat form submit tugas pada parent Bab jika assignment aktif dan belum lewat tenggat.
+7. Guest bisa melihat info tugas dan CTA login.
+8. Active state sidebar tampil benar untuk parent Bab.
+9. Active state sidebar tampil benar untuk sub-bab.
+10. Tidak ada error 404 selama lesson parent published dan masih milik course yang benar.
+11. Navigasi mobile tetap bekerja.
+12. Jika badge tugas ditambahkan, badge tampil pada parent Bab yang punya assignment aktif.
 
 ---
 
 ## Catatan untuk Implementer
 
-- Jangan mulai dari UI kompleks sebelum data model assignment dan comment final.
-- Jangan menyimpan iframe YouTube mentah dari input user/admin. Simpan URL atau video id, lalu render iframe dari template yang aman.
-- Jangan render HTML WYSIWYG tanpa sanitasi.
-- Jangan membuat komentar di bawah lesson jika requirement tetap menyebut komentar per course.
-- Jangan membuat submission langsung ke lesson jika requirement membutuhkan tugas bisa berada di akhir course.
-- Untuk versi pertama, prioritaskan fitur berjalan stabil dibanding drag and drop dan editor block yang terlalu kompleks.
+- Jangan memindahkan assignment dari parent Bab ke sub-bab hanya untuk menghindari bug UI.
+- Jangan membuat parent Bab tidak bisa punya assignment, karena data saat ini sudah memakai pola tersebut.
+- Jangan menghapus children/sub-bab saat membuat parent Bab clickable.
+- Jangan membuat query assignment count yang menyebabkan N+1 query berlebihan.
+- Jika hanya butuh fix cepat, cukup ubah header Bab parent menjadi link ke `route('courses.lesson', [$course, $chapter])`.
+- Setelah perbaikan, cek juga `resources/views/pages/courses/show.blade.php` agar daftar Bab di halaman detail course konsisten.

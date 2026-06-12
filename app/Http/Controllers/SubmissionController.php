@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\Submission;
+use Illuminate\Http\Request;
 
 class SubmissionController extends Controller
 {

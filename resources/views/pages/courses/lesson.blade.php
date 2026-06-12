@@ -35,23 +35,29 @@
                 <div class="max-h-[calc(100vh-200px)] overflow-y-auto">
                     @foreach($course->lessons->whereNull('parent_id') as $index => $chapter)
                         <div class="border-b border-primary/5 last:border-0">
-                            <div class="px-6 py-3 bg-surface/30">
-                                <h4 class="font-bold text-sm text-on-surface-variant">Bab {{ $index + 1 }}: {{ $chapter->title }}</h4>
-                            </div>
+                            <a href="{{ route('courses.lesson', [$course, $chapter]) }}" class="px-6 py-3 flex items-center justify-between gap-3 transition-colors {{ $lesson->id === $chapter->id ? 'bg-primary/10 text-primary border-l-4 border-primary' : 'bg-surface/30 text-on-surface-variant hover:bg-surface hover:text-on-surface' }}">
+                                <div class="min-w-0">
+                                    <h4 class="font-bold text-sm">Bab {{ $index + 1 }}: {{ $chapter->title }}</h4>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    @if(($chapter->active_assignments_count ?? 0) > 0)
+                                        <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Tugas</span>
+                                    @endif
+                                    <span class="material-symbols-outlined text-[18px] {{ $lesson->id === $chapter->id ? 'text-primary' : 'text-primary/40' }}">chevron_right</span>
+                                </div>
+                            </a>
                             @if($chapter->children->count() > 0)
                                 <div class="divide-y divide-primary/5">
                                     @foreach($chapter->children as $subLesson)
                                         <a href="{{ route('courses.lesson', [$course, $subLesson]) }}" class="px-6 py-3 flex items-center gap-3 transition-colors {{ $lesson->id === $subLesson->id ? 'bg-primary/5 border-l-4 border-primary text-primary' : 'hover:bg-surface text-on-surface-variant hover:text-on-surface' }}">
                                             <span class="material-symbols-outlined text-[18px] {{ $lesson->id === $subLesson->id ? 'text-primary' : 'text-primary/40' }}">play_circle</span>
-                                            <span class="text-sm font-medium">{{ $subLesson->title }}</span>
+                                            <span class="text-sm font-medium flex-1 min-w-0">{{ $subLesson->title }}</span>
+                                            @if(($subLesson->active_assignments_count ?? 0) > 0)
+                                                <span class="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex-shrink-0">Tugas</span>
+                                            @endif
                                         </a>
                                     @endforeach
                                 </div>
-                            @else
-                                <a href="{{ route('courses.lesson', [$course, $chapter]) }}" class="px-6 py-3 flex items-center gap-3 transition-colors {{ $lesson->id === $chapter->id ? 'bg-primary/5 border-l-4 border-primary text-primary' : 'hover:bg-surface text-on-surface-variant hover:text-on-surface' }}">
-                                    <span class="material-symbols-outlined text-[18px] {{ $lesson->id === $chapter->id ? 'text-primary' : 'text-primary/40' }}">play_circle</span>
-                                    <span class="text-sm font-medium">Masuk ke Bab</span>
-                                </a>
                             @endif
                         </div>
                     @endforeach
@@ -184,6 +190,11 @@
                             </div>
                             <div class="flex-grow">
                                 <textarea name="body" rows="3" placeholder="Tulis pertanyaan atau diskusi..." class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20 text-sm mb-3" required></textarea>
+                                @error('body')
+                                    @if(!old('parent_id'))
+                                        <p class="text-red-500 text-xs mb-3 font-medium">{{ $message }}</p>
+                                    @endif
+                                @enderror
                                 <div class="flex justify-end">
                                     <button type="submit" class="px-6 py-2 bg-primary text-white font-bold rounded-full hover:bg-primary/90 text-sm shadow-md shadow-primary/20">Kirim Diskusi</button>
                                 </div>
@@ -221,7 +232,12 @@
                                     @csrf
                                     <input type="hidden" name="parent_id" value="{{ $comment->id }}">
                                     <div class="flex gap-3">
-                                        <textarea name="body" rows="2" placeholder="Tulis balasan..." class="w-full px-4 py-2 bg-white border border-primary/10 rounded-xl focus:ring-2 focus:ring-primary/20 text-sm" required></textarea>
+                                        <div class="flex-grow">
+                                            <textarea name="body" rows="2" placeholder="Tulis balasan..." class="w-full px-4 py-2 bg-white border border-primary/10 rounded-xl focus:ring-2 focus:ring-primary/20 text-sm" required></textarea>
+                                            @if($errors->has('body') && old('parent_id') == $comment->id)
+                                                <p class="text-red-500 text-xs mt-1 font-medium">{{ $errors->first('body') }}</p>
+                                            @endif
+                                        </div>
                                         <button type="submit" class="px-4 py-2 bg-secondary text-white font-bold rounded-xl hover:bg-secondary/90 text-sm h-fit">Kirim</button>
                                     </div>
                                 </form>
