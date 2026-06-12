@@ -54,10 +54,6 @@
                     <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.users.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">group</span>
                     Pengguna
                 </a>
-                <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium">
-                    <span class="material-symbols-outlined text-[22px]">settings</span>
-                    Pengaturan
-                </a>
             </div>
 
             <!-- Sidebar Footer -->
