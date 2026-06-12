@@ -46,6 +46,10 @@
                     <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.courses.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">school</span>
                     Kursus
                 </a>
+                <a href="{{ route('admin.pages.index') }}" class="flex items-center gap-4 px-4 py-3 rounded-2xl {{ request()->routeIs('admin.pages.*') ? 'bg-primary/10 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium' }}">
+                    <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.pages.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">description</span>
+                    Konten Halaman
+                </a>
                 <a href="{{ route('admin.users.index') }}" class="flex items-center gap-4 px-4 py-3 rounded-2xl {{ request()->routeIs('admin.users.*') ? 'bg-primary/10 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface hover:text-primary transition-colors font-medium' }}">
                     <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('admin.users.*') ? 'font-variation-settings:\'FILL\'_1' : '' }}">group</span>
                     Pengguna
