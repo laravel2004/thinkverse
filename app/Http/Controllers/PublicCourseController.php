@@ -63,7 +63,7 @@ class PublicCourseController extends Controller
 
     public function lesson(Course $course, Lesson $lesson)
     {
-        if ($course->status !== 'published' || $lesson->status !== 'published' || $lesson->course_id !== $course->id) {
+        if ($course->status !== 'published' || $lesson->status !== 'published' || (int) $lesson->course_id !== (int) $course->getKey()) {
             abort(404);
         }
 

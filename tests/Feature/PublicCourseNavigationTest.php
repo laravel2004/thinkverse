@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\PublicCourseController;
 use App\Models\Assignment;
 use App\Models\Course;
 use App\Models\Lesson;
@@ -102,5 +103,33 @@ class PublicCourseNavigationTest extends TestCase
         $response->assertSee('Bab 1: Apa itu Independent');
         $response->assertSee(route('courses.lesson', [$course, $chapter]), false);
         $response->assertSee('Tugas');
+    }
+
+    public function test_lesson_page_allows_string_foreign_key_values_from_database_driver(): void
+    {
+        $course = Course::create([
+            'title' => 'Testing',
+            'slug' => 'testing',
+            'description' => 'Course description',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $lesson = Lesson::create([
+            'course_id' => $course->id,
+            'title' => 'Dsds',
+            'slug' => 'dsds-6a2cc7338396a',
+            'status' => 'published',
+            'sort_order' => 1,
+        ]);
+
+        $lesson->setRawAttributes([
+            ...$lesson->getAttributes(),
+            'course_id' => (string) $course->id,
+        ], true);
+
+        $view = (new PublicCourseController())->lesson($course, $lesson);
+
+        $this->assertSame('pages.courses.lesson', $view->name());
     }
 }
