@@ -19,12 +19,11 @@ class SubmissionController extends Controller
     public function update(Request $request, Submission $submission)
     {
         $data = $request->validate([
-            'grade' => 'nullable|numeric|min:0|max:100',
+            'score' => 'nullable|numeric|min:0|max:100',
             'feedback' => 'nullable|string',
         ]);
 
         $data['status'] = 'graded';
-        $data['graded_at'] = now();
 
         $submission->update($data);
 

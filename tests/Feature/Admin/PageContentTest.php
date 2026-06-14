@@ -21,13 +21,13 @@ class PageContentTest extends TestCase
     public function test_guest_cannot_access_page_management(): void
     {
         $response = $this->get(route('admin.pages.index'));
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/sudut-panel/admin/login');
 
         $response = $this->get(route('admin.pages.edit', 'home'));
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/sudut-panel/admin/login');
 
         $response = $this->put(route('admin.pages.update', 'home'), []);
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/sudut-panel/admin/login');
     }
 
     public function test_non_admin_cannot_access_page_management(): void

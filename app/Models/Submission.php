@@ -7,9 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Submission extends Model
 {
     protected $fillable = [
-        'assignment_id', 'user_id', 'file_path', 
+        'assignment_id', 'user_id', 'student_name', 'file_path',
         'status', 'score', 'feedback', 'submitted_at'
     ];
+
+    public function getStudentDisplayNameAttribute(): string
+    {
+        return $this->user?->name ?? $this->student_name ?? 'Pengunjung';
+    }
 
     protected function casts(): array
     {

@@ -37,13 +37,14 @@
             </thead>
             <tbody class="divide-y divide-primary/5">
                 @forelse($submissions as $submission)
+                @php($studentName = $submission->student_display_name)
                 <tr class="hover:bg-surface/30 transition-colors group">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
-                                {{ substr($submission->user->name, 0, 1) }}
+                                {{ substr($studentName, 0, 1) }}
                             </div>
-                            <div class="font-bold text-on-surface">{{ $submission->user->name }}</div>
+                            <div class="font-bold text-on-surface">{{ $studentName }}</div>
                         </div>
                     </td>
                     <td class="px-6 py-4">
@@ -63,10 +64,10 @@
                         @endif
                     </td>
                     <td class="px-6 py-4">
-                        <span class="font-bold text-on-surface">{{ $submission->grade ?? '-' }} / 100</span>
+                        <span class="font-bold text-on-surface">{{ $submission->score ?? '-' }} / 100</span>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <button onclick="openReviewModal({{ $submission->id }}, '{{ Storage::url($submission->file_path) }}', '{{ $submission->user->name }}', '{{ $submission->grade }}', '{{ addslashes($submission->feedback ?? '') }}')" class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl font-bold text-sm transition-colors">
+                        <button onclick="openReviewModal({{ $submission->id }}, @js(Storage::url($submission->file_path)), @js($studentName), @js($submission->score), @js($submission->feedback ?? ''))" class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl font-bold text-sm transition-colors">
                             Beri Nilai
                         </button>
                     </td>
@@ -110,7 +111,7 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-bold text-on-surface mb-2">Nilai (0-100)</label>
-                        <input type="number" id="inputGrade" name="grade" min="0" max="100" class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20" required>
+                        <input type="number" id="inputGrade" name="score" min="0" max="100" class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20" required>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-on-surface mb-2">Umpan Balik / Catatan</label>

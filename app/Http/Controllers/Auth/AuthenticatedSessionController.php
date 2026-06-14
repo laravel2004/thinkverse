@@ -28,11 +28,18 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->user()->role === 'admin') {
-            return redirect()->route('admin.dashboard');
+        if ($request->user()->role !== 'admin') {
+            Auth::guard('web')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors([
+                'email' => 'Akun ini tidak memiliki akses admin.',
+            ])->onlyInput('email');
         }
 
-        return redirect()->route('home');
+        return redirect()->route('admin.dashboard');
     }
 
     /**

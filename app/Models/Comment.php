@@ -7,8 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Comment extends Model
 {
     protected $fillable = [
-        'course_id', 'user_id', 'parent_id', 'body', 'status'
+        'course_id', 'user_id', 'guest_name', 'parent_id', 'body', 'status'
     ];
+
+    public function getAuthorNameAttribute(): string
+    {
+        return $this->user?->name ?? $this->guest_name ?? 'Pengunjung';
+    }
 
     public function course()
     {

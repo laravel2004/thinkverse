@@ -10,7 +10,8 @@ class SubmissionController extends Controller
 {
     public function store(Request $request, Assignment $assignment)
     {
-        $request->validate([
+        $data = $request->validate([
+            'student_name' => 'required|string|min:2|max:100',
             'submission_file' => 'required|file|mimes:pdf|max:10240', // max 10MB PDF
         ]);
 
@@ -24,10 +25,14 @@ class SubmissionController extends Controller
 
         $path = $request->file('submission_file')->store('submissions', 'public');
 
-        Submission::updateOrCreate(
-            ['assignment_id' => $assignment->id, 'user_id' => auth()->id()],
-            ['file_path' => $path, 'status' => 'pending', 'submitted_at' => now()]
-        );
+        Submission::create([
+            'assignment_id' => $assignment->id,
+            'user_id' => auth()->id(),
+            'student_name' => $data['student_name'],
+            'file_path' => $path,
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
 
         return back()->with('success', 'Tugas berhasil dikumpulkan!');
     }

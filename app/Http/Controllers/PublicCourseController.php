@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Lesson;
+use Illuminate\Http\Request;
 
 class PublicCourseController extends Controller
 {
@@ -25,9 +26,33 @@ class PublicCourseController extends Controller
         }]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $courses = Course::where('status', 'published')->orderBy('sort_order')->orderBy('created_at', 'desc')->paginate(12);
+        $selectedCategory = trim((string) $request->query('category', ''));
+        $searchQuery = trim((string) $request->query('q', ''));
+
+        $coursesQuery = Course::where('status', 'published')
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc');
+
+        if ($selectedCategory !== '' && strtolower($selectedCategory) !== 'semua') {
+            $normalizedCategory = mb_strtolower($selectedCategory);
+
+            $coursesQuery->whereRaw('LOWER(TRIM(category)) = ?', [$normalizedCategory]);
+        }
+
+        if ($searchQuery !== '') {
+            $normalizedSearch = mb_strtolower($searchQuery);
+
+            $coursesQuery->where(function ($query) use ($normalizedSearch) {
+                $query->whereRaw('LOWER(title) LIKE ?', ['%' . $normalizedSearch . '%'])
+                    ->orWhereRaw('LOWER(COALESCE(excerpt, "")) LIKE ?', ['%' . $normalizedSearch . '%'])
+                    ->orWhereRaw('LOWER(COALESCE(description, "")) LIKE ?', ['%' . $normalizedSearch . '%'])
+                    ->orWhereRaw('LOWER(COALESCE(category, "")) LIKE ?', ['%' . $normalizedSearch . '%']);
+            });
+        }
+
+        $courses = $coursesQuery->paginate(12)->withQueryString();
         $pageContent = app(\App\Services\PageContentService::class)->getPage('courses');
 
         // Fetch unique categories from database for published courses
@@ -45,7 +70,19 @@ class PublicCourseController extends Controller
             $pageContent['filters']['chips'] = array_merge(['Semua'], $dbCategories);
         }
 
-        return view('pages.courses', compact('courses', 'pageContent'));
+        if ($request->boolean('append')) {
+            $cardsHtml = collect($courses->items())->map(function (Course $course) use ($pageContent) {
+                return view('pages.courses.partials.course-card', compact('course', 'pageContent'))->render();
+            })->implode('');
+
+            return response()->json([
+                'html' => $cardsHtml,
+                'next_page_url' => $courses->nextPageUrl(),
+                'has_more' => $courses->hasMorePages(),
+            ]);
+        }
+
+        return view('pages.courses', compact('courses', 'pageContent', 'selectedCategory', 'searchQuery'));
     }
 
     public function show(Course $course)

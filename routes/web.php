@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,6 +14,8 @@ Route::get('/', function () {
 Route::get('/courses', [\App\Http\Controllers\PublicCourseController::class, 'index'])->name('courses');
 Route::get('/courses/{course:slug}', [\App\Http\Controllers\PublicCourseController::class, 'show'])->name('courses.show');
 Route::get('/courses/{course:slug}/lessons/{lesson:slug}', [\App\Http\Controllers\PublicCourseController::class, 'lesson'])->name('courses.lesson');
+Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\SubmissionController::class, 'store'])->name('submissions.store');
+Route::post('/courses/{course}/comments', [\App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
 
 Route::get('/about', function () {
     $pageContent = app(\App\Services\PageContentService::class)->getPage('about');
@@ -25,10 +26,6 @@ Route::get('/contact', function () {
     $pageContent = app(\App\Services\PageContentService::class)->getPage('contact');
     return view('pages.contact', compact('pageContent'));
 })->name('contact');
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
@@ -44,15 +41,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/pages', [\App\Http\Controllers\Admin\PageContentController::class, 'index'])->name('pages.index');
     Route::get('/pages/{pageKey}/edit', [\App\Http\Controllers\Admin\PageContentController::class, 'edit'])->name('pages.edit');
     Route::put('/pages/{pageKey}', [\App\Http\Controllers\Admin\PageContentController::class, 'update'])->name('pages.update');
-});
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
-    Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\SubmissionController::class, 'store'])->name('submissions.store');
-    Route::post('/courses/{course}/comments', [\App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
 });
 
 require __DIR__.'/auth.php';

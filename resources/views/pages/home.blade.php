@@ -19,7 +19,7 @@
                 {{ data_get($pageContent, 'hero.description') }}
             </p>
 <div class="flex flex-col sm:flex-row gap-5 mt-4">
-<a href="{{ data_get($pageContent, 'hero.primary_button_url') }}" class="deep-purple-gradient text-on-primary px-10 py-5 rounded-2xl font-bold text-lg shadow-[0_20px_40px_rgba(99,14,212,0.25)] purple-glow-hover transition-all flex items-center justify-center gap-3">
+<a href="{{ url('/courses#list-kursus') }}" class="deep-purple-gradient text-on-primary px-10 py-5 rounded-2xl font-bold text-lg shadow-[0_20px_40px_rgba(99,14,212,0.25)] purple-glow-hover transition-all flex items-center justify-center gap-3">
                     {{ data_get($pageContent, 'hero.primary_button_label') }}
                     <span class="material-symbols-outlined font-bold">arrow_forward</span>
 </a>

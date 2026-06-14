@@ -10,43 +10,63 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_login_screen_can_be_rendered(): void
+    public function test_public_login_screen_is_removed(): void
     {
-        $response = $this->get('/login');
-
-        $response->assertStatus(200);
+        $this->get('/login')->assertNotFound();
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_admin_login_screen_can_be_rendered(): void
     {
-        $user = User::factory()->create();
+        $this->get('/sudut-panel/admin/login')
+            ->assertOk()
+            ->assertSee('AKSES ADMIN');
+    }
 
-        $response = $this->post('/login', [
+    public function test_admin_can_authenticate_using_admin_login_screen(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->post('/sudut-panel/admin/login', [
+            'email' => $admin->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($admin);
+        $response->assertRedirect(route('admin.dashboard', absolute: false));
+    }
+
+    public function test_non_admin_user_can_not_authenticate(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+
+        $response = $this->from('/sudut-panel/admin/login')->post('/sudut-panel/admin/login', [
             'email' => $user->email,
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('home', absolute: false));
+        $this->assertGuest();
+        $response
+            ->assertRedirect('/sudut-panel/admin/login')
+            ->assertSessionHasErrors('email');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create();
+        $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->post('/login', [
-            'email' => $user->email,
+        $this->post('/sudut-panel/admin/login', [
+            'email' => $admin->email,
             'password' => 'wrong-password',
         ]);
 
         $this->assertGuest();
     }
 
-    public function test_users_can_logout(): void
+    public function test_admin_can_logout(): void
     {
-        $user = User::factory()->create();
+        $admin = User::factory()->create(['role' => 'admin']);
 
-        $response = $this->actingAs($user)->post('/logout');
+        $response = $this->actingAs($admin)->post('/logout');
 
         $this->assertGuest();
         $response->assertRedirect('/');

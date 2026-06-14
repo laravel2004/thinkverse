@@ -2,13 +2,11 @@ buatkan issue.md yang berisi perencanaan untuk nanti di implementasi
 oleh junior programmer atau ai model yang lebih murah
 
 isi dari planning nya adalah sebagai berikut
-1. pelajari pages about, contact, course, dan home dari C:\laragon\www\thinkverse\resources\views\pages terlebih dahulu.
-2. buatkan agar isi content nya bisa dinamis dan diganti di admin.
-3. Isi harus sama dengan seperti sekarang.
-1. lihat di endpoint ini http://127.0.0.1:8000/courses/independent-financial-freedom/lessons/independent-6a2c246f7a910
-2. kenapa di Bab 1: Apa itu Independent tidak bisa di click padahal disitu ada penugasannya.
-3. coba benarkan itu
-
+1. user user itu tidak ada login dan register.
+2. hapus saja fitur login dan register untuk user.
+3. untuk admin tetap ada login namun hide url nya di /sudut-panel/admin/login ya
+4. untuk fitur comment itu yang comment tidak usah login tinggal isi nama dan comment nya.
+5. untuk pengumpulan tugas juga seperti itu tidak perlu login dan user tinggal isi nama dan file yang di kumpulkan
 
 
 buatkan tahapan tahapan yang harus direncanakan untuk implementasi

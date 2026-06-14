@@ -115,32 +115,28 @@
                                             </p>
                                         @endif
                                     </div>
-                                    @auth
-                                        @php
-                                            $submission = $assignment->submissions()->where('user_id', auth()->id())->first();
-                                        @endphp
-                                        @if($submission)
-                                            <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                                                <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                                                Tugas Dikumpulkan
-                                            </span>
-                                        @endif
-                                    @endauth
                                 </div>
                                 
                                 <div class="prose prose-sm max-w-none text-on-surface-variant mb-6">
                                     {!! $assignment->instruction !!}
                                 </div>
 
-                                @auth
-                                    @if(!$submission)
-                                        @if($assignment->due_at && $assignment->due_at->isPast())
-                                            <div class="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">
-                                                Waktu pengumpulan tugas telah habis.
+                                @if($assignment->due_at && $assignment->due_at->isPast())
+                                    <div class="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200">
+                                        Waktu pengumpulan tugas telah habis.
+                                    </div>
+                                @else
+                                    <form action="{{ route('submissions.store', $assignment) }}" method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded-2xl border border-primary/10">
+                                        @csrf
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label class="block text-sm font-bold text-on-surface mb-2">Nama Pengumpul</label>
+                                                <input type="text" name="student_name" value="{{ old('student_name') }}" placeholder="Masukkan nama Anda" class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20 text-sm" required>
+                                                @error('student_name')
+                                                    <p class="text-red-500 text-xs mt-2 font-medium">{{ $message }}</p>
+                                                @enderror
                                             </div>
-                                        @else
-                                            <form action="{{ route('submissions.store', $assignment) }}" method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded-2xl border border-primary/10">
-                                                @csrf
+                                            <div>
                                                 <label class="block text-sm font-bold text-on-surface mb-2">Upload Tugas (PDF, Max 10MB)</label>
                                                 <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                                                     <input type="file" name="submission_file" accept=".pdf" class="block w-full text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" required>
@@ -149,25 +145,10 @@
                                                 @error('submission_file')
                                                     <p class="text-red-500 text-xs mt-2 font-medium">{{ $message }}</p>
                                                 @enderror
-                                            </form>
-                                        @endif
-                                    @else
-                                        <div class="bg-white p-4 rounded-xl border border-green-200 flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <span class="material-symbols-outlined text-green-500">description</span>
-                                                <div>
-                                                    <p class="text-sm font-bold text-on-surface">File Anda telah terkirim</p>
-                                                    <p class="text-xs text-on-surface-variant">Pada {{ $submission->submitted_at->format('d M Y, H:i') }}</p>
-                                                </div>
                                             </div>
-                                            <a href="{{ Storage::url($submission->file_path) }}" target="_blank" class="text-primary font-bold text-sm hover:underline">Lihat File</a>
                                         </div>
-                                    @endif
-                                @else
-                                    <div class="p-4 bg-yellow-50 text-yellow-800 rounded-xl text-sm font-bold border border-yellow-200">
-                                        Silakan <a href="{{ route('login') }}" class="underline text-yellow-900">Login</a> untuk mengumpulkan tugas.
-                                    </div>
-                                @endauth
+                                    </form>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -181,80 +162,85 @@
                     Diskusi ({{ $comments->count() }})
                 </h2>
 
-                @auth
-                    <form action="{{ route('comments.store', $course) }}" method="POST" class="mb-10">
-                        @csrf
-                        <div class="flex gap-4">
-                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                                {{ substr(auth()->user()->name, 0, 1) }}
-                            </div>
-                            <div class="flex-grow">
-                                <textarea name="body" rows="3" placeholder="Tulis pertanyaan atau diskusi..." class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20 text-sm mb-3" required></textarea>
-                                @error('body')
-                                    @if(!old('parent_id'))
-                                        <p class="text-red-500 text-xs mb-3 font-medium">{{ $message }}</p>
-                                    @endif
-                                @enderror
-                                <div class="flex justify-end">
-                                    <button type="submit" class="px-6 py-2 bg-primary text-white font-bold rounded-full hover:bg-primary/90 text-sm shadow-md shadow-primary/20">Kirim Diskusi</button>
-                                </div>
+                <form action="{{ route('comments.store', $course) }}" method="POST" class="mb-10">
+                    @csrf
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                            <span class="material-symbols-outlined text-[20px]">person</span>
+                        </div>
+                        <div class="flex-grow">
+                            <input type="text" name="guest_name" value="{{ old('parent_id') ? '' : old('guest_name') }}" placeholder="Nama Anda" class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20 text-sm mb-3" required>
+                            @error('guest_name')
+                                @if(!old('parent_id'))
+                                    <p class="text-red-500 text-xs mb-3 font-medium">{{ $message }}</p>
+                                @endif
+                            @enderror
+                            <textarea name="body" rows="3" placeholder="Tulis pertanyaan atau diskusi..." class="w-full px-4 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-primary/20 text-sm mb-3" required></textarea>
+                            @error('body')
+                                @if(!old('parent_id'))
+                                    <p class="text-red-500 text-xs mb-3 font-medium">{{ $message }}</p>
+                                @endif
+                            @enderror
+                            <div class="flex justify-end">
+                                <button type="submit" class="px-6 py-2 bg-primary text-white font-bold rounded-full hover:bg-primary/90 text-sm shadow-md shadow-primary/20">Kirim Diskusi</button>
                             </div>
                         </div>
-                    </form>
-                @else
-                    <div class="p-6 bg-surface rounded-2xl text-center mb-10 border border-primary/5">
-                        <p class="text-on-surface-variant font-medium mb-3">Ingin bergabung dalam diskusi?</p>
-                        <a href="{{ route('login') }}" class="inline-block px-6 py-2 bg-primary text-white font-bold rounded-full hover:bg-primary/90 text-sm shadow-md shadow-primary/20">Login Sekarang</a>
                     </div>
-                @endauth
+                </form>
 
                 <div class="space-y-8">
                     @forelse($comments as $comment)
+                        @php($commentAuthorName = $comment->author_name)
                         <div class="flex gap-4">
                             <div class="w-10 h-10 rounded-full bg-surface border border-primary/10 flex items-center justify-center text-on-surface-variant font-bold flex-shrink-0">
-                                {{ substr($comment->user->name, 0, 1) }}
+                                {{ substr($commentAuthorName, 0, 1) }}
                             </div>
                             <div class="flex-grow">
                                 <div class="bg-surface rounded-2xl rounded-tl-none p-4 mb-2">
                                     <div class="flex items-center justify-between mb-2">
-                                        <h4 class="font-bold text-on-surface text-sm">{{ $comment->user->name }}</h4>
+                                        <h4 class="font-bold text-on-surface text-sm">{{ $commentAuthorName }}</h4>
                                         <span class="text-xs text-on-surface-variant">{{ $comment->created_at->diffForHumans() }}</span>
                                     </div>
                                     <p class="text-sm text-on-surface-variant">{{ $comment->body }}</p>
                                 </div>
                                 
                                 <!-- Placeholder for Reply Button -->
-                                @auth
                                 <button class="text-xs font-bold text-primary hover:underline ml-2" onclick="document.getElementById('reply-form-{{ $comment->id }}').classList.toggle('hidden')">Balas</button>
                                 
                                 <!-- Reply Form -->
                                 <form id="reply-form-{{ $comment->id }}" action="{{ route('comments.store', $course) }}" method="POST" class="hidden mt-3 mb-4">
                                     @csrf
                                     <input type="hidden" name="parent_id" value="{{ $comment->id }}">
-                                    <div class="flex gap-3">
-                                        <div class="flex-grow">
-                                            <textarea name="body" rows="2" placeholder="Tulis balasan..." class="w-full px-4 py-2 bg-white border border-primary/10 rounded-xl focus:ring-2 focus:ring-primary/20 text-sm" required></textarea>
-                                            @if($errors->has('body') && old('parent_id') == $comment->id)
-                                                <p class="text-red-500 text-xs mt-1 font-medium">{{ $errors->first('body') }}</p>
-                                            @endif
+                                    <div class="space-y-3">
+                                        <input type="text" name="guest_name" value="{{ old('parent_id') == $comment->id ? old('guest_name') : '' }}" placeholder="Nama Anda" class="w-full px-4 py-2 bg-white border border-primary/10 rounded-xl focus:ring-2 focus:ring-primary/20 text-sm" required>
+                                        @if($errors->has('guest_name') && old('parent_id') == $comment->id)
+                                            <p class="text-red-500 text-xs font-medium">{{ $errors->first('guest_name') }}</p>
+                                        @endif
+                                        <div class="flex gap-3">
+                                            <div class="flex-grow">
+                                                <textarea name="body" rows="2" placeholder="Tulis balasan..." class="w-full px-4 py-2 bg-white border border-primary/10 rounded-xl focus:ring-2 focus:ring-primary/20 text-sm" required></textarea>
+                                                @if($errors->has('body') && old('parent_id') == $comment->id)
+                                                    <p class="text-red-500 text-xs mt-1 font-medium">{{ $errors->first('body') }}</p>
+                                                @endif
+                                            </div>
+                                            <button type="submit" class="px-4 py-2 bg-secondary text-white font-bold rounded-xl hover:bg-secondary/90 text-sm h-fit">Kirim</button>
                                         </div>
-                                        <button type="submit" class="px-4 py-2 bg-secondary text-white font-bold rounded-xl hover:bg-secondary/90 text-sm h-fit">Kirim</button>
                                     </div>
                                 </form>
-                                @endauth
 
                                 <!-- Replies -->
                                 @if($comment->replies->count() > 0)
                                     <div class="mt-4 space-y-4">
                                         @foreach($comment->replies as $reply)
+                                            @php($replyAuthorName = $reply->author_name)
                                             <div class="flex gap-3">
                                                 <div class="w-8 h-8 rounded-full bg-white border border-primary/10 flex items-center justify-center text-on-surface-variant font-bold text-xs flex-shrink-0">
-                                                    {{ substr($reply->user->name, 0, 1) }}
+                                                    {{ substr($replyAuthorName, 0, 1) }}
                                                 </div>
                                                 <div class="flex-grow">
                                                     <div class="bg-white border border-primary/5 rounded-2xl rounded-tl-none p-3">
                                                         <div class="flex items-center justify-between mb-1">
-                                                            <h4 class="font-bold text-on-surface text-xs">{{ $reply->user->name }}</h4>
+                                                            <h4 class="font-bold text-on-surface text-xs">{{ $replyAuthorName }}</h4>
                                                             <span class="text-[10px] text-on-surface-variant">{{ $reply->created_at->diffForHumans() }}</span>
                                                         </div>
                                                         <p class="text-sm text-on-surface-variant">{{ $reply->body }}</p>

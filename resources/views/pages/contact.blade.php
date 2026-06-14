@@ -19,6 +19,15 @@
     <!-- Contact Form Section -->
     <section class="pb-24 px-margin-mobile md:px-margin-desktop">
         <div class="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
+            @php
+                $supportEmail = '';
+                foreach (data_get($pageContent, 'info.cards', []) as $card) {
+                    if (($card['icon'] ?? null) === 'mail' && !empty($card['link_url'])) {
+                        $supportEmail = preg_replace('/^mailto:/i', '', $card['link_url']);
+                        break;
+                    }
+                }
+            @endphp
             <!-- Contact Info -->
             <div class="lg:col-span-5 space-y-8">
                 @foreach(data_get($pageContent, 'info.cards', []) as $card)
@@ -49,26 +58,26 @@
             <div class="lg:col-span-7">
                 <div class="bg-white rounded-[3rem] p-10 md:p-14 border border-primary/5 premium-shadow">
                     <h2 class="font-headline-md text-headline-md text-primary mb-8">{{ data_get($pageContent, 'form.title') }}</h2>
-                    <form class="space-y-6">
+                    <form class="space-y-6" data-contact-mailto-form data-support-email="{{ $supportEmail }}">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-2">
                                 <label class="font-label-md text-label-md text-on-surface-variant">Nama Lengkap</label>
-                                <input type="text" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Masukkan nama Anda">
+                                <input type="text" name="name" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Masukkan nama Anda">
                             </div>
                             <div class="space-y-2">
                                 <label class="font-label-md text-label-md text-on-surface-variant">Alamat Email</label>
-                                <input type="email" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="email@contoh.com">
+                                <input type="email" name="email" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="email@contoh.com">
                             </div>
                         </div>
                         <div class="space-y-2">
                             <label class="font-label-md text-label-md text-on-surface-variant">Subjek</label>
-                            <input type="text" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Topik pesan Anda">
+                            <input type="text" name="subject" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Topik pesan Anda">
                         </div>
                         <div class="space-y-2">
                             <label class="font-label-md text-label-md text-on-surface-variant">Pesan</label>
-                            <textarea rows="5" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Tuliskan detail pertanyaan atau masukan Anda di sini..."></textarea>
+                            <textarea rows="5" name="message" class="w-full px-6 py-4 rounded-2xl bg-surface border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Tuliskan detail pertanyaan atau masukan Anda di sini..."></textarea>
                         </div>
-                        <button type="button" class="w-full deep-purple-gradient text-on-primary py-4 rounded-2xl font-bold text-lg shadow-[0_15px_30px_rgba(99,14,212,0.2)] purple-glow-hover transition-all active:scale-95">
+                        <button type="submit" class="w-full deep-purple-gradient text-on-primary py-4 rounded-2xl font-bold text-lg shadow-[0_15px_30px_rgba(99,14,212,0.2)] purple-glow-hover transition-all active:scale-95">
                             {{ data_get($pageContent, 'form.button_label') }}
                         </button>
                     </form>
@@ -76,4 +85,50 @@
             </div>
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('[data-contact-mailto-form]');
+            if (!form) {
+                return;
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const supportEmail = form.dataset.supportEmail || '';
+                if (!supportEmail) {
+                    return;
+                }
+
+                const formData = new FormData(form);
+                const name = (formData.get('name') || '').toString().trim();
+                const email = (formData.get('email') || '').toString().trim();
+                const subject = (formData.get('subject') || '').toString().trim();
+                const message = (formData.get('message') || '').toString().trim();
+
+                const lines = [];
+                if (name) {
+                    lines.push(`Nama: ${name}`);
+                }
+                if (email) {
+                    lines.push(`Email: ${email}`);
+                }
+                if (message) {
+                    lines.push('');
+                    lines.push(message);
+                }
+
+                const mailtoUrl = new URL(`mailto:${supportEmail}`);
+                if (subject) {
+                    mailtoUrl.searchParams.set('subject', subject);
+                }
+                if (lines.length > 0) {
+                    mailtoUrl.searchParams.set('body', lines.join('\n'));
+                }
+
+                window.location.href = mailtoUrl.toString();
+            });
+        });
+    </script>
 @endsection

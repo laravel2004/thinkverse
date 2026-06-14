@@ -14,8 +14,8 @@
                     {{ data_get($pageContent, 'hero.description') }}
                 </p>
                 <div class="flex flex-wrap gap-4 justify-center md:justify-start">
-                    <a href="{{ data_get($pageContent, 'hero.primary_button_url', '#') }}" class="px-8 py-4 rounded-full bg-primary-container text-white font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">{{ data_get($pageContent, 'hero.primary_button_label') }}</a>
-                    <a href="{{ data_get($pageContent, 'hero.secondary_button_url', '#') }}" class="px-8 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-all flex items-center justify-center">{{ data_get($pageContent, 'hero.secondary_button_label') }}</a>
+                <a href="{{ url('/courses#list-kursus') }}" class="px-8 py-4 rounded-full bg-primary-container text-white font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">{{ data_get($pageContent, 'hero.primary_button_label') }}</a>
+                    <a href="{{ url('/about') }}" class="px-8 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-all flex items-center justify-center">{{ data_get($pageContent, 'hero.secondary_button_label') }}</a>
                 </div>
             </div>
             <div class="md:w-2/5 relative">
@@ -40,18 +40,55 @@
         <div class="max-w-container-max mx-auto">
             <div class="glass-card rounded-3xl p-6 md:p-8 mb-12 shadow-sm">
                 <div class="flex flex-col gap-8">
-                    <!-- Desktop Search -->
-                    <div class="relative w-full max-w-2xl mx-auto">
-                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">search</span>
-                        <input class="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border-2 border-primary/10 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-body-md outline-none" placeholder="{{ data_get($pageContent, 'filters.search_placeholder') }}" type="text">
-                    </div>
+                    <form method="GET" action="{{ route('courses') }}" class="w-full max-w-2xl mx-auto">
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="relative flex-1">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">search</span>
+                                <input
+                                    class="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border-2 border-primary/10 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-body-md outline-none"
+                                    placeholder="{{ data_get($pageContent, 'filters.search_placeholder') }}"
+                                    type="search"
+                                    name="q"
+                                    value="{{ $searchQuery ?? '' }}"
+                                >
+                            </div>
+                            @if(($selectedCategory ?? '') !== '')
+                                <input type="hidden" name="category" value="{{ $selectedCategory }}">
+                            @endif
+                            <button type="submit" class="px-8 py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap">
+                                Cari
+                            </button>
+                        </div>
+                    </form>
+                    @if(($searchQuery ?? '') !== '')
+                        <div class="flex justify-center">
+                            <a href="{{ route('courses', request()->filled('category') ? ['category' => $selectedCategory] : []) }}" class="text-sm font-bold text-primary hover:underline">
+                                Hapus pencarian
+                            </a>
+                        </div>
+                    @endif
                     <!-- Filter Chips -->
                     <div class="flex flex-wrap justify-center gap-3">
                         @foreach(data_get($pageContent, 'filters.chips', []) as $idx => $chip)
+                            @php
+                                $isActiveChip = ($selectedCategory ?? '') === $chip
+                                    || (($selectedCategory ?? '') === '' && $idx === 0)
+                                    || (strtolower((string) ($selectedCategory ?? '')) === 'semua' && $idx === 0);
+                                $chipParams = [];
+                                if ($idx > 0) {
+                                    $chipParams['category'] = $chip;
+                                }
+                                if (($searchQuery ?? '') !== '') {
+                                    $chipParams['q'] = $searchQuery;
+                                }
+                                $chipUrl = $idx === 0
+                                    ? route('courses', (($searchQuery ?? '') !== '') ? ['q' => $searchQuery] : [])
+                                    : route('courses', $chipParams);
+                            @endphp
                             @if($idx === 0)
-                                <button class="active-filter px-6 py-2.5 rounded-full font-label-md text-label-md transition-all border border-primary/20 hover:bg-primary/5 hover:text-primary">{{ $chip }}</button>
+                                <a href="{{ $chipUrl }}" class="{{ $isActiveChip ? 'active-filter bg-primary text-white border-primary' : 'bg-white text-on-surface-variant border-primary/10 hover:border-primary hover:text-primary' }} px-6 py-2.5 rounded-full font-label-md text-label-md transition-all border">{{ $chip }}</a>
                             @else
-                                <button class="px-6 py-2.5 rounded-full font-label-md text-label-md text-on-surface-variant border border-primary/10 bg-white hover:border-primary hover:text-primary transition-all">{{ $chip }}</button>
+                                <a href="{{ $chipUrl }}" class="{{ $isActiveChip ? 'active-filter bg-primary text-white border-primary' : 'bg-white text-on-surface-variant border-primary/10 hover:border-primary hover:text-primary' }} px-6 py-2.5 rounded-full font-label-md text-label-md transition-all border">{{ $chip }}</a>
                             @endif
                         @endforeach
                     </div>
@@ -59,40 +96,9 @@
             </div>
 
             <!-- Course Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div id="list-kursus" class="scroll-mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-course-grid>
                 @forelse($courses as $course)
-                <article class="bg-white rounded-[24px] overflow-hidden border border-primary/5 soft-glow-shadow hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1">
-                    <div class="relative h-56 overflow-hidden bg-surface">
-                        @if($course->thumbnail_path)
-                            <img class="w-full h-full object-cover" alt="{{ $course->title }}" src="{{ Storage::url($course->thumbnail_path) }}">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center text-primary/30">
-                                <span class="material-symbols-outlined text-6xl">school</span>
-                            </div>
-                        @endif
-                        <div class="absolute top-4 left-4 bg-primary/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold">
-                            {{ $course->level ?? data_get($pageContent, 'grid.default_level_label') }}
-                        </div>
-                    </div>
-                    <div class="p-6 flex flex-col flex-grow">
-                        <div class="flex items-center gap-1 mb-3 text-yellow-500 text-sm">
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star_half</span>
-                            <span class="text-on-surface-variant text-xs ml-1">(4.5)</span>
-                        </div>
-                        <h3 class="font-bold text-xl text-on-surface mb-3 leading-tight">{{ $course->title }}</h3>
-                        <p class="text-sm text-on-surface-variant mb-6 line-clamp-2">
-                            {{ $course->excerpt ?? Str::limit($course->description, 100) }}
-                        </p>
-                        <div class="mt-auto flex items-center border-t border-primary/5 pt-4 justify-between">
-                            <span class="text-xs font-bold text-primary/60 uppercase tracking-wider">{{ $course->category ?? data_get($pageContent, 'grid.default_category_label') }}</span>
-                            <a href="{{ route('courses.show', $course) }}" class="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">{{ data_get($pageContent, 'grid.detail_label') }} <span class="material-symbols-outlined text-[18px] ml-1">arrow_forward</span></a>
-                        </div>
-                    </div>
-                </article>
+                @include('pages.courses.partials.course-card', ['course' => $course, 'pageContent' => $pageContent])
                 @empty
                 <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20 text-on-surface-variant">
                     <span class="material-symbols-outlined text-6xl mb-4 opacity-50">school</span>
@@ -101,15 +107,9 @@
                 @endforelse
             </div>
 
-            @if($courses->hasPages())
-            <div class="mt-12 flex justify-center">
-                {{ $courses->links() }}
-            </div>
-            @endif
-
             <!-- Load More Button -->
-            <div class="mt-16 text-center">
-                <button class="px-10 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 shadow-sm active:scale-95">
+            <div class="mt-12 text-center {{ $courses->hasMorePages() ? '' : 'hidden' }}" data-load-more-wrap>
+                <button type="button" class="px-10 py-4 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 shadow-sm active:scale-95" data-load-more-button data-next-url="{{ $courses->nextPageUrl() }}">
                     {{ data_get($pageContent, 'grid.load_more_label') }}
                 </button>
             </div>
@@ -117,7 +117,7 @@
     </section>
 
     <!-- Newsletter / CTA -->
-    <section class="py-section-gap px-margin-mobile md:px-margin-desktop">
+    <!-- <section class="py-section-gap px-margin-mobile md:px-margin-desktop">
         <div class="max-w-container-max mx-auto">
             <div class="gradient-primary rounded-[40px] p-8 md:p-16 text-white text-center relative overflow-hidden">
                 <div class="relative z-10">
@@ -135,5 +135,63 @@
                 <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
             </div>
         </div>
-    </section>
+    </section> -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadMoreButton = document.querySelector('[data-load-more-button]');
+            const loadMoreWrap = document.querySelector('[data-load-more-wrap]');
+            const courseGrid = document.querySelector('[data-course-grid]');
+
+            if (!loadMoreButton || !loadMoreWrap || !courseGrid) {
+                return;
+            }
+
+            loadMoreButton.addEventListener('click', async () => {
+                const nextUrl = loadMoreButton.dataset.nextUrl;
+
+                if (!nextUrl || loadMoreButton.dataset.loading === 'true') {
+                    return;
+                }
+
+                loadMoreButton.dataset.loading = 'true';
+                const originalLabel = loadMoreButton.textContent.trim();
+                loadMoreButton.disabled = true;
+                loadMoreButton.textContent = 'Memuat...';
+
+                try {
+                    const response = await fetch(`${nextUrl}${nextUrl.includes('?') ? '&' : '?'}append=1`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat kursus berikutnya.');
+                    }
+
+                    const data = await response.json();
+
+                    if (data.html) {
+                        courseGrid.insertAdjacentHTML('beforeend', data.html);
+                    }
+
+                    if (data.next_page_url) {
+                        loadMoreButton.dataset.nextUrl = data.next_page_url;
+                        loadMoreButton.disabled = false;
+                        loadMoreButton.textContent = originalLabel;
+                        loadMoreButton.dataset.loading = 'false';
+                    } else {
+                        loadMoreWrap.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    loadMoreButton.disabled = false;
+                    loadMoreButton.textContent = originalLabel;
+                    loadMoreButton.dataset.loading = 'false';
+                }
+            });
+        });
+    </script>
 @endsection

@@ -11,6 +11,7 @@ class CommentController extends Controller
     public function store(Request $request, Course $course)
     {
         $data = $request->validate([
+            'guest_name' => 'required|string|min:2|max:100',
             'body' => 'required|string|min:3|max:1000',
             'parent_id' => 'nullable|exists:comments,id',
         ]);

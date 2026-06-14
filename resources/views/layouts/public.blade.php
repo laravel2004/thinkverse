@@ -34,21 +34,12 @@
             @auth
                 @if(auth()->user()->role === 'admin')
                     <a href="{{ route('admin.dashboard') }}" class="hidden md:block font-label-md text-label-md text-primary font-bold px-6 py-2 rounded-full border border-primary/20 hover:bg-primary/5 transition-all">Admin Panel</a>
-                @else
-                    <div class="hidden md:flex items-center gap-4">
-                        <span class="text-on-surface-variant font-medium">Halo, {{ auth()->user()->name }}</span>
-                    </div>
                 @endif
-                
+
                 <form method="POST" action="{{ route('logout') }}" class="inline m-0 p-0">
                     @csrf
                     <button type="submit" class="font-label-md text-label-md text-red-500 font-bold hover:text-red-700 transition-colors">Keluar</button>
                 </form>
-            @else
-                <a href="{{ route('login') }}" class="hidden md:block font-label-md text-label-md text-primary/70 font-bold px-6 py-2 rounded-full border border-primary/20 hover:bg-primary/5 hover:text-primary transition-all">Log in</a>
-                @if (Route::has('register'))
-                    <a href="{{ route('register') }}" class="font-label-md text-label-md deep-purple-gradient text-on-primary px-8 py-3 rounded-full font-bold shadow-[0_10px_20px_rgba(99,14,212,0.2)] hover:shadow-[0_15px_30px_rgba(99,14,212,0.3)] purple-glow-hover transition-all active:scale-95">Daftar</a>
-                @endif
             @endauth
         </div>
     </div>

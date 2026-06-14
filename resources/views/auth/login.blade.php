@@ -13,12 +13,12 @@
         <div class="w-full max-w-md">
             <div class="text-center mb-10">
                 <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-4 rounded-full bg-white/50 border border-primary/10 text-primary text-xs font-extrabold backdrop-blur-sm shadow-sm">
-                    SELAMAT DATANG KEMBALI
+                    AKSES ADMIN
                 </div>
                 <h1 class="font-display-lg text-4xl text-on-surface mb-4 leading-tight">
-                    Lanjutkan Petualangan <br/><span class="text-gradient">Belajar Anda</span>
+                    Masuk ke <br/><span class="text-gradient">Admin Panel</span>
                 </h1>
-                <p class="font-body-md text-on-surface-variant text-lg">Akses ratusan materi premium dan asah keahlian digital Anda bersama instruktur terbaik.</p>
+                <p class="font-body-md text-on-surface-variant text-lg">Halaman ini khusus untuk administrator ThinkVerse.</p>
             </div>
 
             <div class="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-10 border border-primary/10 premium-shadow">
@@ -39,11 +39,6 @@
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <label for="password" class="font-label-md text-label-md text-on-surface-variant">Kata Sandi</label>
-                            @if (Route::has('password.request'))
-                                <a class="text-sm font-bold text-primary hover:text-primary/80 transition-colors" href="{{ route('password.request') }}">
-                                    Lupa sandi?
-                                </a>
-                            @endif
                         </div>
                         <input id="password" class="w-full px-6 py-4 rounded-2xl bg-white border border-primary/10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none @error('password') border-red-500 @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
                         <x-input-error :messages="$errors->get('password')" class="mt-2 text-red-500 text-sm" />
@@ -56,14 +51,9 @@
                     </div>
 
                     <button type="submit" class="w-full deep-purple-gradient text-on-primary py-4 rounded-2xl font-bold text-lg shadow-[0_15px_30px_rgba(99,14,212,0.2)] purple-glow-hover transition-all active:scale-95 mt-4">
-                        Masuk Sekarang
+                        Masuk Admin
                     </button>
                 </form>
-
-                <p class="mt-8 text-center font-body-md text-sm text-on-surface-variant">
-                    Belum punya akun? 
-                    <a href="{{ route('register') }}" class="font-bold text-primary hover:underline">Daftar di sini</a>
-                </p>
             </div>
         </div>
     </section>
